@@ -1,0 +1,51 @@
+{
+  "name": "dragonfire-puzzle",
+  "version": "1.0.0",
+  "description": "A puzzle game about a dragon, fire breath, and torches",
+  "main": "main.js",
+  "scripts": {
+    "start": "cross-env ELECTRON_RUN_AS_NODE= electron .",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --mac --win --linux"
+  },
+  "devDependencies": {
+    "canvas": "^3.2.1",
+    "cross-env": "^7.0.3",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.dragonfire.puzzle",
+    "productName": "Dragon Fire Puzzle",
+    "files": [
+      "main.js",
+      "index.html",
+      "game.html",
+      "editor.html"
+    ],
+    "mac": {
+      "category": "public.app-category.puzzle-games",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "build/icon.png",
+      "category": "Game"
+    }
+  }
+}

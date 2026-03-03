@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dragon Fire Puzzle</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e; color: #ccc; font-family: monospace;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; gap: 24px; padding: 20px;
+  }
+  h1 { color: #f0e68c; font-size: 36px; text-shadow: 2px 2px 8px rgba(255,100,0,0.4); }
+  .subtitle { color: #aaa; font-size: 14px; margin-top: -16px; }
+  .menu { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  a.btn {
+    display: block; padding: 20px 40px; border-radius: 8px;
+    text-decoration: none; font-family: monospace; font-size: 18px;
+    transition: transform 0.15s, box-shadow 0.15s; text-align: center;
+  }
+  a.btn:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .btn-play { background: #4a7; color: #fff; }
+  .btn-custom { background: #a64; color: #fff; }
+  .btn-edit { background: #47a; color: #fff; }
+  .customize {
+    display: flex; align-items: flex-start; gap: 24px;
+    background: rgba(255,255,255,0.05); border-radius: 10px; padding: 16px 24px;
+  }
+  .customize canvas { border-radius: 6px; image-rendering: pixelated; }
+  .skin-options { display: flex; flex-direction: column; gap: 8px; }
+  .skin-row { display: flex; align-items: center; gap: 8px; }
+  .skin-row .lbl { color: #aaa; font-size: 11px; width: 50px; text-align: right; }
+  .preset-dot {
+    width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent; transition: border-color 0.15s, transform 0.15s;
+  }
+  .preset-dot:hover { transform: scale(1.15); }
+  .preset-dot.active { border-color: #f0e68c; }
+  .part-picker {
+    width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 4px; cursor: pointer; padding: 0; background: none;
+    -webkit-appearance: none; appearance: none;
+  }
+  .part-picker::-webkit-color-swatch-wrapper { padding: 0; }
+  .part-picker::-webkit-color-swatch { border: none; border-radius: 2px; }
+  .part-picker::-moz-color-swatch { border: none; border-radius: 2px; }
+  .weapon-btn {
+    background: rgba(255,255,255,0.08); color: #aaa; border: 2px solid transparent;
+    padding: 4px 12px; border-radius: 6px; cursor: pointer; font-family: monospace;
+    font-size: 13px; transition: border-color 0.15s, color 0.15s;
+  }
+  .weapon-btn:hover { color: #ccc; }
+  .weapon-btn.active { border-color: #f0e68c; color: #f0e68c; }
+  .section-label { color: #777; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .settings {
+    background: rgba(255,255,255,0.05); border-radius: 10px; padding: 16px 24px;
+    display: flex; flex-direction: column; gap: 10px; min-width: 280px;
+  }
+  .settings-title { color: #f0e68c; font-size: 14px; margin-bottom: 2px; }
+  .setting-row { display: flex; align-items: center; gap: 12px; }
+  .setting-row .lbl { color: #aaa; font-size: 12px; width: 60px; text-align: right; }
+  .setting-row input[type="range"] {
+    flex: 1; accent-color: #f0e68c; height: 4px; cursor: pointer;
+    -webkit-appearance: none; appearance: none; background: rgba(255,255,255,0.15);
+    border-radius: 2px; outline: none;
+  }
+  .setting-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: #f0e68c; cursor: pointer;
+  }
+  .setting-row input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #f0e68c; cursor: pointer; border: none;
+  }
+  .vol-val { color: #ccc; font-size: 12px; width: 36px; text-align: center; }
+  .mute-btn {
+    background: rgba(255,255,255,0.08); color: #aaa; border: 2px solid transparent;
+    padding: 4px 12px; border-radius: 6px; cursor: pointer; font-family: monospace;
+    font-size: 13px; transition: border-color 0.15s, color 0.15s;
+  }
+  .mute-btn:hover { color: #ccc; }
+  .mute-btn.muted { border-color: #ff4444; color: #ff4444; }
+  .instructions {
+    max-width: 500px; text-align: center; color: #888; font-size: 13px; line-height: 1.6;
+  }
+  .fire { color: #ff6600; }
+</style>
+</head>
+<body>
+  <h1>Dragon <span class="fire">Fire</span> Puzzle</h1>
+  <p class="subtitle">A puzzle game about a dragon, fire breath, and torches</p>
+  <div class="menu">
+    <a class="btn btn-play" href="game.html">Campaign</a>
+    <a class="btn btn-custom" href="game.html?mode=custom">Custom Campaigns</a>
+    <a class="btn btn-edit" href="editor.html">Level Editor</a>
+  </div>
+  <div class="customize">
+    <canvas id="preview" width="80" height="80"></canvas>
+    <div class="skin-options">
+      <div class="section-label">Presets</div>
+      <div class="skin-row" id="preset-row"></div>
+      <div class="section-label" style="margin-top:4px">Body Parts</div>
+      <div class="skin-row"><span class="lbl">Body</span><input type="color" class="part-picker" id="pick-body"></div>
+      <div class="skin-row"><span class="lbl">Belly</span><input type="color" class="part-picker" id="pick-belly"></div>
+      <div class="skin-row"><span class="lbl">Wings</span><input type="color" class="part-picker" id="pick-wings"></div>
+      <div class="skin-row"><span class="lbl">Eyes</span><input type="color" class="part-picker" id="pick-eyes"></div>
+      <div class="skin-row"><span class="lbl">Horns</span><input type="color" class="part-picker" id="pick-horns"></div>
+      <div class="section-label" style="margin-top:4px">Weapon</div>
+      <div class="skin-row" id="weapon-row"></div>
+    </div>
+  </div>
+  <div class="settings">
+    <div class="settings-title">Settings</div>
+    <div class="setting-row">
+      <span class="lbl">Volume</span>
+      <input type="range" id="vol-slider" min="0" max="100" step="1">
+      <span class="vol-val" id="vol-val">30%</span>
+    </div>
+    <div class="setting-row">
+      <span class="lbl">Sound</span>
+      <button class="mute-btn" id="mute-btn">Enabled</button>
+    </div>
+  </div>
+  <div class="instructions">
+    <strong>How to play:</strong> Move with arrow keys or WASD, press Space to breathe fire.<br>
+    Light all torches to complete each level!<br><br>
+    <strong>Custom campaigns:</strong> Create levels in the editor, save them as packs,<br>
+    then play them from Custom Campaigns. Share codes with friends!
+  </div>
+<script src="sounds.js"></script>
+<script>
+(function(){
+  // Settings controls
+  const volSlider = document.getElementById('vol-slider');
+  const volVal = document.getElementById('vol-val');
+  const muteBtn = document.getElementById('mute-btn');
+
+  volSlider.value = Math.round(SFX.volume * 100);
+  volVal.textContent = Math.round(SFX.volume * 100) + '%';
+  muteBtn.textContent = SFX.enabled ? 'Enabled' : 'Muted';
+  muteBtn.classList.toggle('muted', !SFX.enabled);
+
+  volSlider.addEventListener('input', () => {
+    const v = parseInt(volSlider.value);
+    SFX.setVolume(v / 100);
+    volVal.textContent = v + '%';
+  });
+
+  muteBtn.addEventListener('click', () => {
+    SFX.setEnabled(!SFX.enabled);
+    muteBtn.textContent = SFX.enabled ? 'Enabled' : 'Muted';
+    muteBtn.classList.toggle('muted', !SFX.enabled);
+  });
+})();
+
+(function(){
+  const PRESETS = {
+    green:  { body: '#3a7d44', belly: '#6abf69', wings: '#6a3d7d', eyes: '#ff4444', horns: '#c4a35a' },
+    red:    { body: '#7d3a3a', belly: '#bf6a6a', wings: '#3d6a7d', eyes: '#ffcc44', horns: '#c4a35a' },
+    blue:   { body: '#3a447d', belly: '#6a7fbf', wings: '#7d3d6a', eyes: '#ff4444', horns: '#c4c4c4' },
+    gold:   { body: '#7d6a3a', belly: '#bfa66a', wings: '#7d3d3d', eyes: '#ff4444', horns: '#c4c4c4' },
+    shadow: { body: '#2a2a2a', belly: '#4a4a4a', wings: '#3d3d3d', eyes: '#ff4444', horns: '#8a8a8a' }
+  };
+  const PRESET_NAMES = ['green','red','blue','gold','shadow'];
+  const PARTS = ['body','belly','wings','eyes','horns'];
+
+  // Load saved skin or default
+  let skin;
+  try { skin = JSON.parse(localStorage.dragonSkin); } catch(e) {}
+  if (!skin) skin = {};
+  if (!skin.weapon || !['fire','gun'].includes(skin.weapon)) skin.weapon = 'fire';
+  // Ensure parts exist with defaults
+  const def = PRESETS.green;
+  if (!skin.parts) {
+    // Migrate from old format or use default
+    if (skin.color && PRESETS[skin.color]) {
+      skin.parts = { ...PRESETS[skin.color] };
+    } else {
+      skin.parts = { ...def };
+    }
+  }
+  PARTS.forEach(p => { if (!skin.parts[p]) skin.parts[p] = def[p]; });
+
+  function save() { localStorage.dragonSkin = JSON.stringify(skin); }
+
+  // Detect which preset matches current parts (if any)
+  function activePreset() {
+    for (const name of PRESET_NAMES) {
+      const pr = PRESETS[name];
+      if (PARTS.every(p => skin.parts[p].toLowerCase() === pr[p].toLowerCase())) return name;
+    }
+    return null;
+  }
+
+  function updatePresetHighlight() {
+    const active = activePreset();
+    document.querySelectorAll('.preset-dot').forEach(d => {
+      d.classList.toggle('active', d.dataset.name === active);
+    });
+  }
+
+  // Build preset dots
+  const presetRow = document.getElementById('preset-row');
+  PRESET_NAMES.forEach(name => {
+    const dot = document.createElement('div');
+    dot.className = 'preset-dot';
+    dot.dataset.name = name;
+    dot.style.background = PRESETS[name].body;
+    dot.title = name.charAt(0).toUpperCase() + name.slice(1);
+    dot.onclick = () => {
+      skin.parts = { ...PRESETS[name] };
+      save();
+      syncPickers();
+      updatePresetHighlight();
+      drawPreview();
+      updateFavicon();
+    };
+    presetRow.appendChild(dot);
+  });
+
+  // Build color pickers
+  const pickers = {};
+  PARTS.forEach(part => {
+    const el = document.getElementById('pick-' + part);
+    el.value = skin.parts[part];
+    pickers[part] = el;
+    el.addEventListener('input', () => {
+      skin.parts[part] = el.value;
+      save();
+      updatePresetHighlight();
+      drawPreview();
+      updateFavicon();
+    });
+  });
+
+  function syncPickers() {
+    PARTS.forEach(p => { pickers[p].value = skin.parts[p]; });
+  }
+
+  // Build weapon buttons
+  const weapRow = document.getElementById('weapon-row');
+  ['fire','gun'].forEach(w => {
+    const btn = document.createElement('button');
+    btn.className = 'weapon-btn' + (skin.weapon === w ? ' active' : '');
+    btn.textContent = w === 'fire' ? 'Fire' : 'Gun';
+    btn.onclick = () => {
+      skin.weapon = w;
+      save();
+      weapRow.querySelectorAll('.weapon-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      drawPreview();
+    };
+    weapRow.appendChild(btn);
+  });
+
+  // Dragon preview
+  const preview = document.getElementById('preview');
+  const pg = preview.getContext('2d');
+
+  function drawPreview() {
+    const sk = skin.parts;
+    const s = 80;
+    pg.clearRect(0, 0, s, s);
+
+    // Body
+    pg.fillStyle = sk.body;
+    pg.fillRect(s*.2, s*.25, s*.6, s*.55);
+    // Belly
+    pg.fillStyle = sk.belly;
+    pg.fillRect(s*.3, s*.4, s*.4, s*.35);
+    // Head
+    pg.fillStyle = sk.body;
+    pg.beginPath(); pg.arc(s*.5, s*.3, s*.2, 0, Math.PI*2); pg.fill();
+    // Eyes
+    pg.fillStyle = sk.eyes;
+    pg.beginPath(); pg.arc(s*.42, s*.36, s*.04, 0, Math.PI*2); pg.fill();
+    pg.beginPath(); pg.arc(s*.58, s*.36, s*.04, 0, Math.PI*2); pg.fill();
+    // Wings
+    pg.fillStyle = sk.wings;
+    pg.beginPath(); pg.moveTo(s*.15, s*.3); pg.lineTo(-s*.05, s*.15); pg.lineTo(s*.2, s*.5); pg.fill();
+    pg.beginPath(); pg.moveTo(s*.85, s*.3); pg.lineTo(s*1.05, s*.15); pg.lineTo(s*.8, s*.5); pg.fill();
+    // Horns
+    pg.fillStyle = sk.horns;
+    pg.beginPath(); pg.moveTo(s*.42, s*.18); pg.lineTo(s*.46, s*.05); pg.lineTo(s*.52, s*.18); pg.fill();
+    pg.beginPath(); pg.moveTo(s*.54, s*.18); pg.lineTo(s*.6, s*.05); pg.lineTo(s*.64, s*.18); pg.fill();
+    // Tail
+    pg.strokeStyle = sk.body;
+    pg.lineWidth = 2;
+    pg.beginPath();
+    pg.moveTo(s*.5, s*.75);
+    pg.quadraticCurveTo(s*.25, s*.85, s*.3, s*.95);
+    pg.stroke();
+
+    // Weapon indicator
+    if (skin.weapon === 'gun') {
+      pg.fillStyle = '#888';
+      pg.fillRect(s*.62, s*.28, s*.18, s*.06);
+      pg.fillStyle = '#aaa';
+      pg.fillRect(s*.76, s*.26, s*.08, s*.1);
+    } else {
+      pg.fillStyle = '#ff6600';
+      pg.beginPath(); pg.arc(s*.82, s*.3, s*.06, 0, Math.PI*2); pg.fill();
+      pg.fillStyle = '#ffcc00';
+      pg.beginPath(); pg.arc(s*.82, s*.3, s*.03, 0, Math.PI*2); pg.fill();
+    }
+  }
+
+  function updateFavicon() {
+    const sk = skin.parts;
+    const s = 32, c = document.createElement('canvas'), g = c.getContext('2d');
+    c.width = c.height = s;
+    g.fillStyle = sk.body; g.fillRect(s*.2, s*.25, s*.6, s*.55);
+    g.fillStyle = sk.belly; g.fillRect(s*.3, s*.4, s*.4, s*.35);
+    g.fillStyle = sk.body; g.beginPath(); g.arc(s*.5, s*.4, s*.2, 0, Math.PI*2); g.fill();
+    g.fillStyle = sk.eyes;
+    g.beginPath(); g.arc(s*.42, s*.46, s*.04, 0, Math.PI*2); g.fill();
+    g.beginPath(); g.arc(s*.58, s*.46, s*.04, 0, Math.PI*2); g.fill();
+    g.fillStyle = sk.wings;
+    g.beginPath(); g.moveTo(s*.15, s*.3); g.lineTo(-s*.05, s*.15); g.lineTo(s*.2, s*.5); g.fill();
+    g.beginPath(); g.moveTo(s*.85, s*.3); g.lineTo(s*1.05, s*.15); g.lineTo(s*.8, s*.5); g.fill();
+    g.fillStyle = sk.horns;
+    g.beginPath(); g.moveTo(s*.42, s*.28); g.lineTo(s*.46, s*.15); g.lineTo(s*.52, s*.28); g.fill();
+    g.beginPath(); g.moveTo(s*.54, s*.28); g.lineTo(s*.6, s*.15); g.lineTo(s*.64, s*.28); g.fill();
+    const old = document.querySelector('link[rel="icon"]');
+    if (old) old.remove();
+    const l = document.createElement('link'); l.rel = 'icon'; l.href = c.toDataURL();
+    document.head.appendChild(l);
+  }
+
+  updatePresetHighlight();
+  drawPreview();
+  updateFavicon();
+})();
+</script>
+</body>
+</html>

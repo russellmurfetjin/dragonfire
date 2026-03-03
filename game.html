@@ -1,0 +1,4614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dragon higher Puzzle</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: monospace; overflow: hidden; }
+  canvas { image-rendering: pixelated; border: 2px solid #444; }
+  #ui {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    color: #f0e68c; font-size: 18px; text-align: center; text-shadow: 1px 1px 3px #000;
+  }
+  #controls {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    color: #aaa; font-size: 14px; text-align: center;
+  }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    background: #1a1a2e; color: #f0e68c; font-family: monospace;
+  }
+  .overlay.transparent { background: rgba(26,26,46,0.85); }
+  .overlay h1 { font-size: 32px; margin-bottom: 24px; text-shadow: 2px 2px 6px #000; }
+  .menu-btn {
+    display: block; width: 260px; padding: 14px 0; margin: 8px 0;
+    background: #2a2a4e; color: #f0e68c; border: 2px solid #4a4a6e;
+    font-family: monospace; font-size: 18px; cursor: pointer;
+    text-align: center; transition: background 0.15s;
+  }
+  .menu-btn:hover { background: #3a3a5e; border-color: #6a6a8e; }
+  .menu-btn.small { width: 120px; padding: 10px 0; font-size: 14px; }
+  .menu-btn.green { border-color: #4a7a4a; }
+  .menu-btn.green:hover { background: #2a4a2e; }
+  #levelselect-grid {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    max-width: 480px; margin-bottom: 24px;
+  }
+  .level-btn {
+    width: 56px; height: 56px; background: #2a2a4e; color: #f0e68c;
+    border: 2px solid #4a4a6e; font-family: monospace; font-size: 20px;
+    cursor: pointer; position: relative; transition: background 0.15s;
+  }
+  .level-btn:hover { background: #3a3a5e; border-color: #6a6a8e; }
+  .level-btn.completed { border-color: #4a7a4a; }
+  .level-btn.completed::after {
+    content: '\2713'; position: absolute; top: 2px; right: 4px;
+    font-size: 12px; color: #6abf69;
+  }
+  .level-btn.cheated { border-color: #c4a800; }
+  .level-btn.cheated::after {
+    content: '\2713'; position: absolute; top: 2px; right: 4px;
+    font-size: 12px; color: #c4a800;
+  }
+  .level-btn.drunk-completed { border-color: #2ab5a0; box-shadow: 0 0 6px rgba(42,181,160,0.4); }
+  .level-btn.drunk-completed::before {
+    content: '\1F943'; position: absolute; top: 1px; left: 3px;
+    font-size: 10px;
+  }
+  #levelselect-packname { font-size: 18px; color: #aaa; margin-bottom: 16px; }
+  #pack-list {
+    display: flex; flex-direction: column; gap: 8px;
+    max-height: 300px; overflow-y: auto; margin-bottom: 16px; min-width: 300px;
+  }
+  .pack-btn { text-align: left; padding: 12px 16px; }
+  #pack-paste { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+  #share-code-input {
+    width: 260px; padding: 10px; background: #2a2a4e; color: #f0e68c;
+    border: 2px solid #4a4a6e; font-family: monospace; font-size: 14px;
+  }
+  #share-code-input::placeholder { color: #666; }
+  /* Console */
+  #console-overlay {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+    display: none; flex-direction: column; font-family: monospace;
+  }
+  #console-overlay.active { display: flex; }
+  #console-log {
+    background: rgba(0,0,0,0.85); color: #0f0; font-size: 13px;
+    max-height: 160px; overflow-y: auto; padding: 6px 10px;
+    border-top: 2px solid #333;
+  }
+  #console-log div { margin: 2px 0; white-space: pre-wrap; }
+  #console-log .err { color: #f44; }
+  #console-log .info { color: #4af; }
+  #console-log .ok { color: #4f4; }
+  #console-input-row {
+    display: flex; background: #111; border-top: 1px solid #333;
+  }
+  #console-prompt { color: #0f0; padding: 6px; font-size: 14px; }
+  #console-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #0f0; font-family: monospace; font-size: 14px; padding: 6px 0;
+  }
+  #console-autocomplete {
+    position: absolute; bottom: 100%; left: 0; right: 0;
+    background: rgba(0,0,0,0.9); display: none;
+  }
+  #console-autocomplete div {
+    padding: 3px 10px; color: #888; font-size: 13px; cursor: pointer;
+  }
+  #console-autocomplete div.selected { background: #333; color: #0f0; }
+  /* Dragamon battle */
+  #dragamon-overlay {
+    position: fixed; inset: 0; z-index: 25; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: #0a0a1a; font-family: monospace; color: #ccc;
+  }
+  #dragamon-overlay.active { display: flex; }
+  #dragamon-overlay canvas { border: 2px solid #444; margin-bottom: 16px; }
+  #dragamon-msg { font-size: 16px; margin-bottom: 12px; min-height: 24px; color: #f0e68c; }
+  #dragamon-actions { display: flex; gap: 12px; }
+  .dragamon-btn {
+    padding: 10px 24px; background: #2a2a4e; color: #f0e68c; border: 2px solid #4a4a6e;
+    font-family: monospace; font-size: 16px; cursor: pointer; transition: background 0.15s;
+  }
+  .dragamon-btn:hover { background: #3a3a5e; }
+  .dragamon-btn:disabled { opacity: 0.4; cursor: default; }
+  /* Captcha */
+  #captcha-overlay {
+    position: fixed; inset: 0; z-index: 25; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: #0a0a1a; font-family: monospace; color: #ccc;
+  }
+  #captcha-overlay.active { display: flex; }
+  #captcha-title { font-size: 18px; margin-bottom: 12px; color: #f0e68c; text-align: center; }
+  #captcha-canvas { border: 2px solid #444; margin-bottom: 12px; cursor: pointer; }
+  #captcha-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .captcha-btn {
+    padding: 8px 20px; background: #2a2a4e; color: #f0e68c; border: 2px solid #4a4a6e;
+    font-family: monospace; font-size: 14px; cursor: pointer; transition: background 0.15s;
+  }
+  .captcha-btn:hover { background: #3a3a5e; }
+  /* Newspaper */
+  #news-overlay {
+    position: fixed; inset: 0; z-index: 25; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.75);
+  }
+  #news-overlay.active { display: flex; }
+  #dialogue-overlay {
+    position: fixed; inset: 0; z-index: 25; display: none;
+    flex-direction: column; align-items: center; justify-content: flex-end;
+    background: rgba(0,0,0,0.5); padding-bottom: 40px;
+  }
+  #dialogue-overlay.active { display: flex; }
+  #dialogue-box {
+    background: #1a1a2e; border: 2px solid #4a7; border-radius: 8px;
+    padding: 16px; max-width: 500px; width: 90%; position: relative;
+    font-family: monospace; color: #e0e0e0;
+  }
+  #dialogue-name {
+    position: absolute; top: -14px; left: 16px;
+    background: #4a7; color: #1a1a2e; padding: 2px 10px;
+    font-weight: bold; font-size: 13px; border-radius: 4px;
+  }
+  #dialogue-portrait {
+    float: left; width: 56px; height: 56px; margin-right: 12px;
+    background: #222; border: 1px solid #4a7; border-radius: 4px;
+  }
+  #dialogue-text { font-size: 14px; line-height: 1.5; min-height: 56px; }
+  #dialogue-dismiss {
+    text-align: right; color: #888; font-size: 11px; margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div id="ui">
+  <div id="level">Level 1</div>
+  <div id="goal">Light all torches with fire breath!</div>
+</div>
+<canvas id="game"></canvas>
+<div id="controls">Arrow keys: Move &nbsp;|&nbsp; Space: Breathe fire &nbsp;|&nbsp; R: Restart &nbsp;|&nbsp; Esc: Pause</div>
+
+<!-- Overlays -->
+<div id="levelselect-overlay" class="overlay">
+  <h1>Select Level</h1>
+  <div id="levelselect-packname"></div>
+  <div id="levelselect-grid"></div>
+  <button class="menu-btn" onclick="goMainMenu()">Back to Menu</button>
+</div>
+
+<div id="pause-overlay" class="overlay transparent">
+  <h1>Paused</h1>
+  <button class="menu-btn" onclick="resumeGame()">Resume</button>
+  <button class="menu-btn" onclick="restartLevel()">Restart Level</button>
+  <button class="menu-btn" onclick="showLevelSelect()">Level Select</button>
+  <button class="menu-btn" onclick="goMainMenu()">Main Menu</button>
+</div>
+
+<div id="packbrowser-overlay" class="overlay">
+  <h1>Custom Campaigns</h1>
+  <div id="pack-list"></div>
+  <div id="pack-paste">
+    <input type="text" id="share-code-input" placeholder="Paste share code...">
+    <button class="menu-btn small" onclick="loadShareCode()">Load</button>
+  </div>
+  <button class="menu-btn" onclick="goMainMenu()">Back to Menu</button>
+</div>
+
+<div id="win-overlay" class="overlay transparent">
+  <h1 id="win-title">Level Complete!</h1>
+  <button class="menu-btn green" id="win-next-btn" onclick="nextLevel()">Next Level</button>
+  <button class="menu-btn" onclick="showLevelSelect()">Level Select</button>
+</div>
+
+<div id="death-overlay" class="overlay transparent">
+  <h1 style="color:#f44">You Died!</h1>
+  <button class="menu-btn" onclick="restartLevel()">Retry</button>
+  <button class="menu-btn" onclick="showLevelSelect()">Level Select</button>
+</div>
+
+<div id="console-overlay">
+  <div id="console-log"></div>
+  <div id="console-input-row" style="position:relative">
+    <div id="console-autocomplete"></div>
+    <span id="console-prompt">&gt;</span>
+    <input id="console-input" type="text" spellcheck="false" autocomplete="off">
+  </div>
+</div>
+
+<div id="dragamon-overlay">
+  <div id="dragamon-msg"></div>
+  <canvas id="dragamon-canvas" width="400" height="200"></canvas>
+  <div id="dragamon-actions"></div>
+</div>
+
+<div id="captcha-overlay">
+  <div id="captcha-title"></div>
+  <canvas id="captcha-canvas" width="300" height="300"></canvas>
+  <div id="captcha-actions"></div>
+</div>
+
+<div id="news-overlay">
+  <canvas id="news-canvas" width="340" height="460"></canvas>
+  <button class="captcha-btn" style="margin-top:12px" id="news-close-btn">Close</button>
+</div>
+
+<div id="dialogue-overlay">
+  <div id="dialogue-box">
+    <div id="dialogue-name">Dragon</div>
+    <canvas id="dialogue-portrait" width="56" height="56"></canvas>
+    <div id="dialogue-text"></div>
+    <div id="dialogue-dismiss">Press E or click to close</div>
+  </div>
+</div>
+
+<script src="levels.js"></script>
+<script src="sounds.js"></script>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let TILE = 48;
+{ const _savedSize = sessionStorage.getItem('dragonTileSize'); if (_savedSize) TILE = parseInt(_savedSize, 10) || 48; }
+const COLS = 12;
+const ROWS = 10;
+canvas.width = COLS * TILE;
+canvas.height = ROWS * TILE;
+
+// Skin system
+const SKIN_DEFAULT = { body: '#3a7d44', belly: '#6abf69', wings: '#6a3d7d', eyes: '#ff4444', horns: '#c4a35a' };
+let _skinData; try { _skinData = JSON.parse(localStorage.dragonSkin); } catch(e) {}
+if (!_skinData) _skinData = {};
+const skinColors = _skinData.parts ? { ..._skinData.parts } : { ...SKIN_DEFAULT };
+['body','belly','wings','eyes','horns'].forEach(p => { if (!skinColors[p]) skinColors[p] = SKIN_DEFAULT[p]; });
+const weaponMode = _skinData.weapon === 'gun' ? 'gun' : 'fire';
+
+// Tile types
+const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, EXIT = 7, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42;
+const ROTATABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE]);
+
+// Layer helpers
+function cellToLayers(val) {
+  if (Array.isArray(val)) { while (val.length < 5) val.push(0); return val; }
+  if (val === 0) return [0, 0, 0, 0, 0];
+  if (val === WATER || val === ICE || val === WATER_DRY || (val >= BELT_UP && val <= BELT_LEFT) || val === PLATE || val === SPIKE) return [val, 0, 0, 0, 0];
+  if (val === WALL || val === PUSH_BLOCK || val === MIRROR_NE || val === MIRROR_NW || val === GRATE || val === GATE_OPEN || val === GATE_CLOSED || val === CRACKED || val === DOOR_CLOSED || val === DOOR_OPEN) return [0, val, 0, 0, 0];
+  if (val === TORCH_OFF || val === TORCH_ON || val === TOGGLE_OFF || val === TOGGLE_ON || val === LEVER_OFF || val === LEVER_ON || val === EYE_OFF || val === EYE_ON) return [0, 0, val, 0, 0];
+  if ((val >= SKULL && val <= CRATE) || val === PAPER || (val >= RAILWAY && val <= DRAGON_NPC)) return [0, 0, 0, val, 0];
+  return [0, 0, 0, 0, 0];
+}
+
+// Pack migration
+function migratePack(p) {
+  const v = p.version || 1;
+  if (v < 2) {
+    p.levels.forEach(lvl => {
+      if (!lvl.cols) lvl.cols = lvl.map[0] ? lvl.map[0].length : 12;
+      if (!lvl.rows) lvl.rows = lvl.map.length || 10;
+    });
+  }
+  if (v < 3) {
+    p.levels.forEach(lvl => {
+      if (lvl.maxFire === undefined) lvl.maxFire = 0;
+    });
+  }
+  if (v < 4) {
+    p.levels.forEach(lvl => {
+      lvl.map = lvl.map.map(row => row.map(cellToLayers));
+    });
+  }
+  if (v < 5) {
+    p.levels.forEach(lvl => {
+      lvl.map.forEach(row => row.forEach(c => { if (c.length < 4) c.push(0); }));
+    });
+  }
+  if (v < 6) {
+    p.levels.forEach(lvl => {
+      lvl.map.forEach(row => row.forEach(c => { if (c.length < 5) c.push(0); }));
+    });
+  }
+  p.version = 6;
+  return p;
+}
+
+// Check for custom level pack from editor or share code in URL
+let activeLevels = levels;
+let packName = '';
+const params = new URLSearchParams(window.location.search);
+const isCustomMode = params.get('mode') === 'custom';
+
+(function loadCustomPack() {
+  // Load from localStorage (editor "Play in Game")
+  if (params.get('pack') === 'custom') {
+    try {
+      const data = migratePack(JSON.parse(localStorage.getItem('dragonPuzzleActivePack')));
+      if (data && data.levels && data.levels.length) {
+        activeLevels = data.levels;
+        packName = data.name || 'Custom';
+      }
+    } catch(e) {}
+  }
+  // Load from URL hash (shared link)
+  if (window.location.hash.startsWith('#DRAGONPACK:')) {
+    try {
+      const json = decodeURIComponent(escape(atob(window.location.hash.slice(12))));
+      const data = migratePack(JSON.parse(json));
+      if (data && data.levels && data.levels.length) {
+        activeLevels = data.levels;
+        packName = data.name || 'Shared';
+      }
+    } catch(e) {}
+  }
+})();
+
+// Game state
+let gameState = 'levelselect'; // 'levelselect' | 'playing' | 'paused' | 'packbrowser' | 'win' | 'death'
+let currentLevel = 0;
+let map, player, fireParticles, animFrame, facing;
+let gameCols = COLS, gameRows = ROWS;
+let pendingEffects = [];
+let visualOverrides = [];
+let maxFire = 0; // 0 = unlimited
+let fireUsed = 0;
+let pressedPlates = new Set();
+let beltCargo = {}; // ice riding on belts: {"x,y": tileId}
+let undoState = null; // snapshot for undo command
+
+function saveUndo() {
+  undoState = {
+    map: map.map(r => r.map(c => [...c])),
+    px: player.x, py: player.y,
+    fx: facing.x, fy: facing.y,
+    fireUsed: fireUsed,
+    plates: new Set(pressedPlates),
+    cargo: Object.assign({}, beltCargo)
+  };
+}
+
+function deepCopy(arr) { return arr.map(r => r.map(c => Array.isArray(c) ? [...c] : c)); }
+
+function tryPush(bx, by, dx, dy) {
+  const nx = bx + dx, ny = by + dy;
+  if (nx < 0 || nx >= gameCols || ny < 0 || ny >= gameRows) return false;
+  const src = map[by][bx], dest = map[ny][nx];
+  const srcKey = bx + ',' + by;
+  const destKey = nx + ',' + ny;
+  // Determine what's being pushed: PUSH_BLOCK, ICE in map, or ICE in beltCargo
+  let pl, isCargo = false;
+  if (src[1] === PUSH_BLOCK) pl = 1;
+  else if (src[0] === ICE) pl = 0;
+  else if (beltCargo[srcKey]) { pl = 0; isCargo = true; }
+  else return false;
+  // Dest must not have blocking structure, existing ice, or belt cargo
+  if (dest[1] !== 0) return false;
+  if (dest[0] === ICE || beltCargo[destKey]) return false;
+  // Push ice onto a belt → store as cargo instead of overwriting belt
+  if (pl === 0 && dest[0] >= BELT_UP && dest[0] <= BELT_LEFT) {
+    beltCargo[destKey] = ICE;
+  } else {
+    if (dest[pl] !== 0) return false;
+    dest[pl] = isCargo ? ICE : src[pl];
+  }
+  // Clear source
+  if (isCargo) delete beltCargo[srcKey];
+  else src[pl] = 0;
+  return true;
+}
+
+function tickBelts() {
+  const moved = new Set();
+  for (let r = 0; r < gameRows; r++)
+    for (let c = 0; c < gameCols; c++) {
+      const g = map[r][c][0];
+      if (g < BELT_UP || g > BELT_LEFT) continue;
+      const dir = [[0,-1],[1,0],[0,1],[-1,0]][g - BELT_UP];
+      const nx = c + dir[0], ny = r + dir[1];
+      if (nx < 0 || nx >= gameCols || ny < 0 || ny >= gameRows) continue;
+      if (player.x === c && player.y === r) continue;
+      const dest = map[ny][nx];
+      const cargoKey = c + ',' + r;
+      const destKey = nx + ',' + ny;
+      if (player.x === nx && player.y === ny) continue;
+      if (moved.has(cargoKey)) continue;
+
+      if (map[r][c][1] === PUSH_BLOCK) {
+        if (dest[1] !== 0 || dest[0] === ICE || beltCargo[destKey]) continue;
+        dest[1] = PUSH_BLOCK;
+        map[r][c][1] = 0;
+        moved.add(destKey);
+      } else if (beltCargo[cargoKey]) {
+        if (dest[1] !== 0 || beltCargo[destKey]) continue;
+        if (dest[0] >= BELT_UP && dest[0] <= BELT_LEFT) {
+          beltCargo[destKey] = beltCargo[cargoKey];
+        } else if (dest[0] === 0) {
+          dest[0] = beltCargo[cargoKey];
+        } else {
+          continue;
+        }
+        delete beltCargo[cargoKey];
+        moved.add(destKey);
+      }
+    }
+}
+
+let levelConnections = [];
+let levelCellProps = {};
+
+function loadLevel(n) {
+  const lvl = activeLevels[n];
+  // Migrate cells to layer format on the fly (handles both old int and new array formats)
+  map = lvl.map.map(r => r.map(c => Array.isArray(c) ? [...c] : cellToLayers(c)));
+  player = { x: lvl.start[0], y: lvl.start[1] };
+  facing = { x: 1, y: 0 };
+  fireParticles = [];
+  pendingEffects = [];
+  visualOverrides = [];
+  beltCargo = {};
+  levelConnections = (lvl.connections || []).map(c => ({ from: [...c.from], to: [...c.to] }));
+  levelCellProps = {};
+  if (lvl.cellProps) Object.keys(lvl.cellProps).forEach(k => { levelCellProps[k] = { ...lvl.cellProps[k] }; });
+  gameCols = lvl.cols || lvl.map[0].length;
+  gameRows = lvl.rows || lvl.map.length;
+  maxFire = lvl.maxFire || 0;
+  fireUsed = 0;
+  canvas.width = gameCols * TILE;
+  canvas.height = gameRows * TILE;
+  const fireInfo = maxFire > 0 ? ` (${maxFire} fires)` : '';
+  const lvlName = lvl.name ? ` - ${lvl.name}` : '';
+  document.getElementById('level').textContent = `${packName ? packName + ' - ' : ''}Level ${n + 1} / ${activeLevels.length}${lvlName}${fireInfo}`;
+  document.getElementById('goal').textContent = packName ? `Pack: ${packName}` : 'Light all torches with fire breath!';
+  winTimer = 0;
+  pressedPlates = new Set();
+  cheated = false;
+  noclipOn = false;
+  godMode = false;
+  discoMode = false;
+  drunkMode = false;
+  drunkAllMoves = true;
+  paintMode = false;
+  paintTrail = [];
+  highlightConns = false;
+  undoState = null;
+  canvas.style.border = '2px solid #444'; // reset CSS border
+  applyInitialPower();
+  initPlates();
+  updateFacingForEyes();
+  updateDoors();
+  // Check level if-rules
+  checkIfRules();
+}
+
+function applyInitialPower() {
+  // Phase 0: startsActive eyes
+  for (let r = 0; r < gameRows; r++)
+    for (let c = 0; c < gameCols; c++) {
+      const props = levelCellProps[c + ',' + r] || {};
+      if (props.startsActive && map[r][c][2] === EYE_OFF) map[r][c][2] = EYE_ON;
+    }
+  for (let r = 0; r < gameRows; r++) {
+    for (let c = 0; c < gameCols; c++) {
+      const o = map[r][c][2];
+      if (o === TOGGLE_ON || o === LEVER_ON) {
+        const conns = getConnectionsFrom(c, r);
+        conns.forEach(conn => {
+          const tx = conn.to[0], ty = conn.to[1];
+          const cell = map[ty][tx];
+          const props = levelCellProps[tx + ',' + ty] || {};
+          const reverse = !!props.reverse;
+          if (cell[1] === GATE_OPEN || cell[1] === GATE_CLOSED) {
+            cell[1] = reverse ? GATE_OPEN : GATE_CLOSED;
+          } else if (cell[0] === WATER || cell[0] === WATER_DRY) {
+            cell[0] = reverse ? WATER_DRY : WATER;
+          } else if (cell[2] === EYE_OFF || cell[2] === EYE_ON) {
+            cell[2] = reverse ? EYE_OFF : EYE_ON;
+          }
+        });
+      }
+      // Plates with push blocks start pressed
+      if (map[r][c][0] === PLATE && map[r][c][1] === PUSH_BLOCK) {
+        pressedPlates.add(c + ',' + r);
+        const conns = getConnectionsFrom(c, r);
+        conns.forEach(conn => {
+          const tx = conn.to[0], ty = conn.to[1];
+          const cell = map[ty][tx];
+          const props = levelCellProps[tx + ',' + ty] || {};
+          const reverse = !!props.reverse;
+          if (cell[1] === GATE_OPEN || cell[1] === GATE_CLOSED) {
+            cell[1] = reverse ? GATE_OPEN : GATE_CLOSED;
+          } else if (cell[0] === WATER || cell[0] === WATER_DRY) {
+            cell[0] = reverse ? WATER_DRY : WATER;
+          } else if (cell[2] === EYE_OFF || cell[2] === EYE_ON) {
+            cell[2] = reverse ? EYE_OFF : EYE_ON;
+          }
+        });
+      }
+    }
+  }
+}
+
+function initPlates() {
+  // Detect plates the player starts on
+  for (let r = 0; r < gameRows; r++) {
+    for (let c = 0; c < gameCols; c++) {
+      if (map[r][c][0] !== PLATE) continue;
+      if (player.x === c && player.y === r) {
+        pressedPlates.add(c + ',' + r);
+      }
+    }
+  }
+}
+
+function updateFacingForEyes() {
+  let closestDist = Infinity, ex = 0, ey = 0;
+  for (let r = 0; r < gameRows; r++)
+    for (let c = 0; c < gameCols; c++)
+      if (map[r][c][2] === EYE_ON) {
+        const d = Math.abs(c - player.x) + Math.abs(r - player.y);
+        if (d > 0 && d < closestDist) { closestDist = d; ex = c; ey = r; }
+      }
+  if (closestDist < Infinity) {
+    const dx = ex - player.x, dy = ey - player.y;
+    facing = Math.abs(dx) >= Math.abs(dy) ? { x: dx > 0 ? 1 : -1, y: 0 } : { x: 0, y: dy > 0 ? 1 : -1 };
+  }
+}
+
+function updatePlates() {
+  const newPressed = new Set();
+  for (let r = 0; r < gameRows; r++) {
+    for (let c = 0; c < gameCols; c++) {
+      if (map[r][c][0] !== PLATE) continue;
+      const isPlayer = (player.x === c && player.y === r);
+      const hasPushBlock = (map[r][c][1] === PUSH_BLOCK);
+      if (isPlayer || hasPushBlock) newPressed.add(c + ',' + r);
+    }
+  }
+  for (const key of newPressed) {
+    if (!pressedPlates.has(key)) {
+      const [x, y] = key.split(',').map(Number);
+      activateConnections(x, y, 'toggle_on');
+    }
+  }
+  for (const key of pressedPlates) {
+    if (!newPressed.has(key)) {
+      const [x, y] = key.split(',').map(Number);
+      activateConnections(x, y, 'toggle_off');
+    }
+  }
+  pressedPlates = newPressed;
+}
+
+// --- DRAWING ---
+
+function drawDragon(px, py, facingX, facingY) {
+  const x = px * TILE;
+  const y = py * TILE;
+  const s = TILE;
+
+  // Body
+  ctx.fillStyle = skinColors.body;
+  ctx.fillRect(x + s*0.2, y + s*0.25, s*0.6, s*0.55);
+
+  // Belly
+  ctx.fillStyle = skinColors.belly;
+  ctx.fillRect(x + s*0.3, y + s*0.4, s*0.4, s*0.35);
+
+  // Head
+  const hx = x + s*0.5 + facingX * s*0.2;
+  const hy = y + s*0.25 + facingY * s*0.15;
+  ctx.fillStyle = skinColors.body;
+  ctx.beginPath();
+  ctx.arc(hx, hy, s*0.2, 0, Math.PI*2);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = skinColors.eyes;
+  const ex1 = hx + facingX*s*0.06 - facingY*s*0.08;
+  const ey1 = hy + facingY*s*0.06 + facingX*s*0.08;
+  const ex2 = hx + facingX*s*0.06 + facingY*s*0.08;
+  const ey2 = hy + facingY*s*0.06 - facingX*s*0.08;
+  ctx.beginPath(); ctx.arc(ex1, ey1, s*0.04, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ex2, ey2, s*0.04, 0, Math.PI*2); ctx.fill();
+
+  // Wings
+  ctx.fillStyle = skinColors.wings;
+  if (facingX !== 0) {
+    // Side-facing wings (top)
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.3, y + s*0.3);
+    ctx.lineTo(x + s*0.5, y + s*0.05);
+    ctx.lineTo(x + s*0.7, y + s*0.3);
+    ctx.fill();
+  } else {
+    // Front/back wings (sides)
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.15, y + s*0.3);
+    ctx.lineTo(x - s*0.05, y + s*0.15);
+    ctx.lineTo(x + s*0.2, y + s*0.5);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.85, y + s*0.3);
+    ctx.lineTo(x + s*1.05, y + s*0.15);
+    ctx.lineTo(x + s*0.8, y + s*0.5);
+    ctx.fill();
+  }
+
+  // Tail
+  ctx.strokeStyle = skinColors.body;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x + s*0.5 - facingX*s*0.3, y + s*0.7 - facingY*s*0.2);
+  ctx.quadraticCurveTo(
+    x + s*0.5 - facingX*s*0.55, y + s*0.8 - facingY*s*0.3,
+    x + s*0.5 - facingX*s*0.45, y + s*0.9 - facingY*s*0.15
+  );
+  ctx.stroke();
+
+  // Horns
+  ctx.fillStyle = skinColors.horns;
+  ctx.beginPath();
+  ctx.moveTo(hx - s*0.08, hy - s*0.12);
+  ctx.lineTo(hx - s*0.04, hy - s*0.25);
+  ctx.lineTo(hx + s*0.02, hy - s*0.12);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(hx + s*0.04, hy - s*0.12);
+  ctx.lineTo(hx + s*0.1, hy - s*0.25);
+  ctx.lineTo(hx + s*0.14, hy - s*0.12);
+  ctx.fill();
+}
+
+function drawWall(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  ctx.fillStyle = '#4a4a5e';
+  ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = '#3a3a4e';
+  ctx.fillRect(x+2, y+2, TILE/2-3, TILE/2-3);
+  ctx.fillRect(x+TILE/2+1, y+TILE/2+1, TILE/2-3, TILE/2-3);
+  ctx.fillStyle = '#555570';
+  ctx.fillRect(x+TILE/2+1, y+2, TILE/2-3, TILE/2-3);
+  ctx.fillRect(x+2, y+TILE/2+1, TILE/2-3, TILE/2-3);
+}
+
+function drawTorch(gx, gy, lit) {
+  const x = gx*TILE + TILE/2, y = gy*TILE + TILE/2;
+  // Base
+  ctx.fillStyle = '#8b6914';
+  ctx.fillRect(x-3, y-8, 6, 20);
+  // Bowl
+  ctx.fillStyle = '#a07818';
+  ctx.fillRect(x-8, y-10, 16, 6);
+  if (lit) {
+    // Flame glow
+    ctx.fillStyle = 'rgba(255,150,0,0.15)';
+    ctx.beginPath(); ctx.arc(x, y-14, 18, 0, Math.PI*2); ctx.fill();
+    // Flame
+    ctx.fillStyle = '#ff6600';
+    ctx.beginPath();
+    ctx.moveTo(x-6, y-10);
+    ctx.quadraticCurveTo(x, y-28 - Math.sin(Date.now()/100)*3, x+6, y-10);
+    ctx.fill();
+    ctx.fillStyle = '#ffcc00';
+    ctx.beginPath();
+    ctx.moveTo(x-3, y-10);
+    ctx.quadraticCurveTo(x, y-22 - Math.sin(Date.now()/120)*2, x+3, y-10);
+    ctx.fill();
+  }
+}
+
+function drawToggleTorch(gx, gy, lit) {
+  const x = gx*TILE + TILE/2, y = gy*TILE + TILE/2;
+  // Purple base
+  ctx.fillStyle = '#4a2a7a';
+  ctx.fillRect(x-3, y-8, 6, 20);
+  ctx.fillStyle = '#6a3d9e';
+  ctx.fillRect(x-8, y-10, 16, 6);
+  // Toggle indicator ring
+  ctx.strokeStyle = lit ? '#ffcc00' : '#887';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(x, y+8, 4, 0, Math.PI*2); ctx.stroke();
+  if (lit) {
+    ctx.fillStyle = 'rgba(255,150,0,0.15)';
+    ctx.beginPath(); ctx.arc(x, y-14, 18, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff6600';
+    ctx.beginPath();
+    ctx.moveTo(x-6, y-10);
+    ctx.quadraticCurveTo(x, y-28 - Math.sin(Date.now()/100)*3, x+6, y-10);
+    ctx.fill();
+    ctx.fillStyle = '#ffcc00';
+    ctx.beginPath();
+    ctx.moveTo(x-3, y-10);
+    ctx.quadraticCurveTo(x, y-22 - Math.sin(Date.now()/120)*2, x+3, y-10);
+    ctx.fill();
+  }
+}
+
+function drawLever(gx, gy, on) {
+  const x = gx*TILE + TILE/2, y = gy*TILE + TILE/2;
+  // Stone base
+  ctx.fillStyle = '#5a5a6e';
+  ctx.fillRect(x-10, y+4, 20, 8);
+  ctx.fillStyle = '#6a6a7e';
+  ctx.fillRect(x-8, y+4, 16, 6);
+  // Pivot
+  ctx.fillStyle = '#888';
+  ctx.beginPath(); ctx.arc(x, y+4, 4, 0, Math.PI*2); ctx.fill();
+  // Handle
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x, y+4);
+  if (on) {
+    ctx.lineTo(x+10, y-12);
+    ctx.stroke();
+    ctx.fillStyle = '#e04040';
+    ctx.beginPath(); ctx.arc(x+10, y-12, 4, 0, Math.PI*2); ctx.fill();
+  } else {
+    ctx.lineTo(x-10, y-12);
+    ctx.stroke();
+    ctx.fillStyle = '#777';
+    ctx.beginPath(); ctx.arc(x-10, y-12, 4, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function drawEye(gx, gy, active) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  if (active) {
+    ctx.fillStyle = 'rgba(170, 68, 255, 0.15)';
+    ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.strokeStyle = active ? '#aa44ff' : '#555';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x - 14, y);
+  ctx.quadraticCurveTo(x, y - 12, x + 14, y);
+  ctx.quadraticCurveTo(x, y + 12, x - 14, y);
+  ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = active ? '#cc66ff' : '#444';
+  ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = active ? '#220044' : '#222';
+  ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawSkull(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  ctx.fillStyle = '#bbb';
+  ctx.beginPath(); ctx.arc(x, y - 2, 8, Math.PI, 0); ctx.lineTo(x + 6, y + 6); ctx.lineTo(x - 6, y + 6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#1a1a2e';
+  ctx.beginPath(); ctx.arc(x - 3, y, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 3, y, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(x - 1, y + 3, 2, 2);
+}
+
+function drawBones(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - 8, y - 5); ctx.lineTo(x + 8, y + 5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + 8, y - 5); ctx.lineTo(x - 8, y + 5); ctx.stroke();
+  ctx.fillStyle = '#ccc';
+  [[-8,-5],[8,-5],[-8,5],[8,5]].forEach(([ox,oy]) => { ctx.beginPath(); ctx.arc(x+ox, y+oy, 2.5, 0, Math.PI*2); ctx.fill(); });
+}
+
+function drawCobweb(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  ctx.strokeStyle = 'rgba(200,200,200,0.35)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 0.5;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * 28, y + Math.sin(a) * 28); ctx.stroke();
+  }
+  for (let r = 8; r <= 24; r += 8) {
+    ctx.beginPath();
+    for (let i = 0; i <= 4; i++) { const a = (i / 4) * Math.PI * 0.5; const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r; i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+    ctx.stroke();
+  }
+}
+
+function drawMushroom(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  ctx.fillStyle = '#7a6a50'; ctx.fillRect(x - 2, y, 4, 10);
+  ctx.fillStyle = '#c44'; ctx.beginPath(); ctx.arc(x, y, 8, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#fcc';
+  ctx.beginPath(); ctx.arc(x - 3, y - 3, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 4, y - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawGear(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  const t = Date.now() / 2000;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(t);
+  ctx.fillStyle = '#777';
+  ctx.beginPath();
+  const teeth = 12;
+  for (let i = 0; i < teeth; i++) {
+    const a = (i / teeth) * Math.PI * 2, r = i % 2 === 0 ? 11 : 8;
+    i === 0 ? ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r) : ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPipe(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE;
+  ctx.fillStyle = '#444'; ctx.fillRect(x - 5, y + 4, 10, TILE - 8);
+  ctx.fillStyle = '#555'; ctx.fillRect(x - 7, y + 4, 14, 4); ctx.fillRect(x - 7, y + TILE - 8, 14, 4);
+  ctx.fillStyle = '#333'; ctx.fillRect(x - 3, y + 10, 6, TILE - 20);
+}
+
+function drawCrate(gx, gy) {
+  const x = gx * TILE + 6, y = gy * TILE + 6, s = TILE - 12;
+  ctx.fillStyle = '#5a4a2a'; ctx.fillRect(x, y, s, s);
+  ctx.fillStyle = '#6a5a3a'; ctx.fillRect(x + 2, y + 2, s - 4, s - 4);
+  ctx.strokeStyle = '#4a3a1a'; ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, s, s);
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s, y + s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + s, y); ctx.lineTo(x, y + s); ctx.stroke();
+}
+
+function drawPaper(gx, gy) {
+  const x = gx * TILE + 8, y = gy * TILE + 4, w = TILE - 16, h = TILE - 8;
+  // Page
+  ctx.fillStyle = '#f5e6c8'; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
+  // Lines of text
+  ctx.fillStyle = '#6b5b45';
+  for (let i = 0; i < 4; i++) {
+    const lw = i === 0 ? w * 0.7 : (i === 3 ? w * 0.5 : w * 0.8);
+    ctx.fillRect(x + 3, y + 5 + i * 6, lw, 1.5);
+  }
+  // Corner fold
+  ctx.fillStyle = '#e0d0b0';
+  ctx.beginPath(); ctx.moveTo(x + w - 5, y); ctx.lineTo(x + w, y + 5); ctx.lineTo(x + w, y); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(x + w - 5, y); ctx.lineTo(x + w, y + 5); ctx.stroke();
+}
+
+function drawRailway(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Sleepers (wooden ties)
+  ctx.fillStyle = '#5a4a3a';
+  for (let i = 0; i < 4; i++) {
+    ctx.fillRect(x + 4 + i * 12, y + 6, 8, TILE - 12);
+  }
+  // Rails
+  ctx.fillStyle = '#888';
+  ctx.fillRect(x + 2, y + 12, TILE - 4, 3);
+  ctx.fillRect(x + 2, y + TILE - 15, TILE - 4, 3);
+  // Rail highlights
+  ctx.fillStyle = '#aaa';
+  ctx.fillRect(x + 2, y + 12, TILE - 4, 1);
+  ctx.fillRect(x + 2, y + TILE - 15, TILE - 4, 1);
+}
+
+function drawRoad(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Pavement
+  ctx.fillStyle = '#4a4a4a';
+  ctx.fillRect(x, y, TILE, TILE);
+  // Cobblestone pattern
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = 0.5;
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const ox = x + 2 + c * 16 + (r % 2 ? 8 : 0);
+      const oy = y + 2 + r * 16;
+      ctx.strokeRect(ox, oy, 14, 14);
+    }
+  }
+  // Center line dashes
+  ctx.fillStyle = '#666';
+  ctx.fillRect(x + TILE / 2 - 1, y + 2, 2, 10);
+  ctx.fillRect(x + TILE / 2 - 1, y + TILE - 12, 2, 10);
+}
+
+function drawLamppost(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE;
+  // Glow
+  ctx.fillStyle = 'rgba(255,220,100,0.12)';
+  ctx.beginPath(); ctx.arc(x, y + 8, 18, 0, Math.PI * 2); ctx.fill();
+  // Post
+  ctx.fillStyle = '#333';
+  ctx.fillRect(x - 2, y + 10, 4, TILE - 10);
+  // Base
+  ctx.fillStyle = '#444';
+  ctx.fillRect(x - 6, y + TILE - 4, 12, 4);
+  // Lantern
+  ctx.fillStyle = '#553';
+  ctx.fillRect(x - 5, y + 4, 10, 8);
+  // Light
+  ctx.fillStyle = '#ffcc44';
+  ctx.fillRect(x - 3, y + 5, 6, 5);
+  // Top
+  ctx.fillStyle = '#444';
+  ctx.fillRect(x - 6, y + 3, 12, 2);
+  ctx.beginPath(); ctx.moveTo(x - 4, y + 3); ctx.lineTo(x, y); ctx.lineTo(x + 4, y + 3); ctx.fill();
+}
+
+function drawBench(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Legs
+  ctx.fillStyle = '#4a3a2a';
+  ctx.fillRect(x + 6, y + TILE / 2, 3, TILE / 2 - 2);
+  ctx.fillRect(x + TILE - 9, y + TILE / 2, 3, TILE / 2 - 2);
+  // Seat
+  ctx.fillStyle = '#8a6a3a';
+  ctx.fillRect(x + 4, y + TILE / 2 - 2, TILE - 8, 4);
+  // Back slats
+  ctx.fillStyle = '#7a5a2a';
+  ctx.fillRect(x + 4, y + TILE / 2 - 10, TILE - 8, 3);
+  ctx.fillRect(x + 4, y + TILE / 2 - 6, TILE - 8, 3);
+  // Back supports
+  ctx.fillStyle = '#5a4020';
+  ctx.fillRect(x + 6, y + TILE / 2 - 12, 3, 12);
+  ctx.fillRect(x + TILE - 9, y + TILE / 2 - 12, 3, 12);
+}
+
+function drawFountain(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  // Basin
+  ctx.fillStyle = '#6a6a7a';
+  ctx.beginPath(); ctx.ellipse(x, y + 6, TILE / 2 - 4, 8, 0, 0, Math.PI * 2); ctx.fill();
+  // Water in basin
+  ctx.fillStyle = '#3a7abf';
+  ctx.beginPath(); ctx.ellipse(x, y + 6, TILE / 2 - 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+  // Center column
+  ctx.fillStyle = '#7a7a8a';
+  ctx.fillRect(x - 3, y - 6, 6, 12);
+  // Water jet (animated)
+  const t = Date.now() / 200;
+  ctx.strokeStyle = '#5aaaee';
+  ctx.lineWidth = 1.5;
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath();
+    ctx.moveTo(x + i * 2, y - 6);
+    ctx.quadraticCurveTo(x + i * 4, y - 14 - Math.sin(t + i) * 3, x + i * 6, y + 2);
+    ctx.stroke();
+  }
+  // Rim
+  ctx.strokeStyle = '#555568';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(x, y + 6, TILE / 2 - 4, 8, 0, 0, Math.PI * 2); ctx.stroke();
+}
+
+function npcColorPalette(body) {
+  // Parse hex to RGB, derive belly (lighter), wings (darker/shifted)
+  const r = parseInt(body.slice(1,3),16), g = parseInt(body.slice(3,5),16), b = parseInt(body.slice(5,7),16);
+  const belly = '#' + [Math.min(r+60,255),Math.min(g+60,255),Math.min(b+60,255)].map(v=>v.toString(16).padStart(2,'0')).join('');
+  const wings = '#' + [Math.max(r-30,0)+50,Math.max(g-60,0),Math.max(b+40,0)].map(v=>Math.min(v,255).toString(16).padStart(2,'0')).join('');
+  return { body, belly, wings, eyes: '#ff4444', horns: '#c4a35a' };
+}
+
+function drawDragonNPC(gx, gy, facingX, facingY, bodyColor) {
+  const colors = npcColorPalette(bodyColor || '#3a7d44');
+  const x = gx * TILE;
+  const y = gy * TILE;
+  const s = TILE;
+  const fx = facingX || 1, fy = facingY || 0;
+
+  // Body
+  ctx.fillStyle = colors.body;
+  ctx.fillRect(x + s*0.2, y + s*0.25, s*0.6, s*0.55);
+  // Belly
+  ctx.fillStyle = colors.belly;
+  ctx.fillRect(x + s*0.3, y + s*0.4, s*0.4, s*0.35);
+  // Head
+  const hx = x + s*0.5 + fx * s*0.2;
+  const hy = y + s*0.25 + fy * s*0.15;
+  ctx.fillStyle = colors.body;
+  ctx.beginPath(); ctx.arc(hx, hy, s*0.2, 0, Math.PI*2); ctx.fill();
+  // Eyes
+  ctx.fillStyle = colors.eyes;
+  const ex1 = hx + fx*s*0.06 - fy*s*0.08;
+  const ey1 = hy + fy*s*0.06 + fx*s*0.08;
+  const ex2 = hx + fx*s*0.06 + fy*s*0.08;
+  const ey2 = hy + fy*s*0.06 - fx*s*0.08;
+  ctx.beginPath(); ctx.arc(ex1, ey1, s*0.04, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ex2, ey2, s*0.04, 0, Math.PI*2); ctx.fill();
+  // Wings
+  ctx.fillStyle = colors.wings;
+  if (fx !== 0) {
+    ctx.beginPath(); ctx.moveTo(x+s*0.3, y+s*0.3); ctx.lineTo(x+s*0.5, y+s*0.05); ctx.lineTo(x+s*0.7, y+s*0.3); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.moveTo(x+s*0.15, y+s*0.3); ctx.lineTo(x-s*0.05, y+s*0.15); ctx.lineTo(x+s*0.2, y+s*0.5); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x+s*0.85, y+s*0.3); ctx.lineTo(x+s*1.05, y+s*0.15); ctx.lineTo(x+s*0.8, y+s*0.5); ctx.fill();
+  }
+  // Tail
+  ctx.strokeStyle = colors.body; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x+s*0.5-fx*s*0.3, y+s*0.7-fy*s*0.2);
+  ctx.quadraticCurveTo(x+s*0.5-fx*s*0.55, y+s*0.8-fy*s*0.3, x+s*0.5-fx*s*0.45, y+s*0.9-fy*s*0.15);
+  ctx.stroke();
+  // Horns
+  ctx.fillStyle = colors.horns;
+  ctx.beginPath(); ctx.moveTo(hx-s*0.08, hy-s*0.12); ctx.lineTo(hx-s*0.04, hy-s*0.25); ctx.lineTo(hx+s*0.02, hy-s*0.12); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(hx+s*0.04, hy-s*0.12); ctx.lineTo(hx+s*0.1, hy-s*0.25); ctx.lineTo(hx+s*0.14, hy-s*0.12); ctx.fill();
+  // Speech indicator
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = '10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('...', hx, hy - s*0.28);
+}
+
+function drawIce(gx, gy) {
+  const x = gx*TILE, y = gy*TILE;
+  ctx.fillStyle = '#a0d8ef';
+  ctx.fillRect(x+4, y+4, TILE-8, TILE-8);
+  ctx.fillStyle = '#c8ecf8';
+  ctx.fillRect(x+8, y+8, TILE-20, TILE-20);
+  ctx.strokeStyle = '#78bcd4';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x+4, y+4, TILE-8, TILE-8);
+  // Shine
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillRect(x+8, y+8, 6, 6);
+}
+
+function drawSpike(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+  ctx.fillStyle = '#888';
+  const cx = x + TILE / 2, cy = y + TILE / 2;
+  const spikes = [[0, -10], [7, -5], [10, 0], [7, 7], [0, 10], [-7, 7], [-10, 0], [-7, -5]];
+  spikes.forEach(([ox, oy]) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + ox * 1.1, cy + oy * 1.1);
+    ctx.lineTo(cx + ox * 0.3 + oy * 0.3, cy + oy * 0.3 - ox * 0.3);
+    ctx.lineTo(cx + ox * 0.3 - oy * 0.3, cy + oy * 0.3 + ox * 0.3);
+    ctx.closePath(); ctx.fill();
+  });
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawMirror(gx, gy, type) {
+  const x = gx*TILE, y = gy*TILE;
+  ctx.fillStyle = 'rgba(200,200,220,0.2)';
+  ctx.fillRect(x+4, y+4, TILE-8, TILE-8);
+  ctx.strokeStyle = '#b0b0cc';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  if (type === MIRROR_NE) { // reflects: right<->up, left<->down (NE mirror: /)
+    ctx.moveTo(x+6, y+TILE-6);
+    ctx.lineTo(x+TILE-6, y+6);
+  } else { // NW mirror: backslash
+    ctx.moveTo(x+6, y+6);
+    ctx.lineTo(x+TILE-6, y+TILE-6);
+  }
+  ctx.stroke();
+  // Shine
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 1;
+  if (type === MIRROR_NE) {
+    ctx.beginPath(); ctx.moveTo(x+10, y+TILE-14); ctx.lineTo(x+TILE-14, y+10); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.moveTo(x+10, y+14); ctx.lineTo(x+TILE-14, y+TILE-10); ctx.stroke();
+  }
+}
+
+function drawFloor(gx, gy) {
+  const x = gx*TILE, y = gy*TILE;
+  if (discoMode) {
+    const hue = (Date.now() / 10 + gx * 30 + gy * 50) % 360;
+    ctx.fillStyle = `hsl(${hue}, 60%, 20%)`;
+  } else {
+    ctx.fillStyle = '#2a2a3e';
+  }
+  ctx.fillRect(x, y, TILE, TILE);
+  ctx.strokeStyle = discoMode ? `hsl(${(Date.now()/5 + gx*20 + gy*40) % 360}, 80%, 40%)` : '#333350';
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(x, y, TILE, TILE);
+}
+
+function drawGrate(gx, gy) {
+  const x = gx*TILE, y = gy*TILE;
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 2;
+  // Vertical bars
+  for (let i = 1; i < 5; i++) {
+    const bx = x + i * (TILE / 5);
+    ctx.beginPath(); ctx.moveTo(bx, y + 2); ctx.lineTo(bx, y + TILE - 2); ctx.stroke();
+  }
+  // Horizontal bars
+  for (let i = 1; i < 4; i++) {
+    const by = y + i * (TILE / 4);
+    ctx.beginPath(); ctx.moveTo(x + 2, by); ctx.lineTo(x + TILE - 2, by); ctx.stroke();
+  }
+  // Border
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
+}
+
+function drawPushBlock(gx, gy) {
+  const x = gx*TILE, y = gy*TILE;
+  ctx.fillStyle = '#7a6a50';
+  ctx.fillRect(x+2, y+2, TILE-4, TILE-4);
+  ctx.fillStyle = '#8d7b5e';
+  ctx.fillRect(x+6, y+6, TILE-12, TILE-12);
+  ctx.strokeStyle = '#5a4a30';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x+2, y+2, TILE-4, TILE-4);
+  // Arrow hints
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath(); ctx.moveTo(x+TILE/2, y+8); ctx.lineTo(x+TILE/2-5, y+16); ctx.lineTo(x+TILE/2+5, y+16); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x+TILE/2, y+TILE-8); ctx.lineTo(x+TILE/2-5, y+TILE-16); ctx.lineTo(x+TILE/2+5, y+TILE-16); ctx.fill();
+}
+
+function drawWater(gx, gy) {
+  const x = gx*TILE, y = gy*TILE;
+  // Base water colour
+  ctx.fillStyle = '#1a5276';
+  ctx.fillRect(x, y, TILE, TILE);
+  // Animated wave highlights
+  const t = Date.now() / 400;
+  ctx.fillStyle = 'rgba(100,180,255,0.25)';
+  for (let i = 0; i < 3; i++) {
+    const wy = y + 10 + i * 14 + Math.sin(t + gx + i) * 3;
+    ctx.beginPath();
+    ctx.moveTo(x, wy);
+    ctx.quadraticCurveTo(x + TILE*0.25, wy - 5, x + TILE*0.5, wy);
+    ctx.quadraticCurveTo(x + TILE*0.75, wy + 5, x + TILE, wy);
+    ctx.lineTo(x + TILE, wy + 4);
+    ctx.quadraticCurveTo(x + TILE*0.75, wy + 9, x + TILE*0.5, wy + 4);
+    ctx.quadraticCurveTo(x + TILE*0.25, wy - 1, x, wy + 4);
+    ctx.fill();
+  }
+  // Border
+  ctx.strokeStyle = '#15416d';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, TILE, TILE);
+}
+
+function drawWaterDry(gx, gy) {
+  const x = gx*TILE, y = gy*TILE;
+  ctx.fillStyle = '#1e2e3e';
+  ctx.fillRect(x, y, TILE, TILE);
+  ctx.strokeStyle = '#253a4a';
+  ctx.lineWidth = 1;
+  // Cracked lines
+  ctx.strokeStyle = '#2a3a50';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(x+8, y+6); ctx.lineTo(x+20, y+18); ctx.lineTo(x+14, y+30); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+30, y+10); ctx.lineTo(x+36, y+24); ctx.lineTo(x+28, y+38); ctx.stroke();
+  ctx.strokeStyle = '#15263a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, TILE, TILE);
+}
+
+function drawGate(gx, gy, closed) {
+  const x = gx * TILE, y = gy * TILE;
+  if (closed) {
+    ctx.fillStyle = '#5a3030';
+    ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+    ctx.strokeStyle = '#8a4444';
+    ctx.lineWidth = 3;
+    for (let i = 1; i < 5; i++) {
+      const bx = x + i * (TILE / 5);
+      ctx.beginPath(); ctx.moveTo(bx, y + 2); ctx.lineTo(bx, y + TILE - 2); ctx.stroke();
+    }
+    ctx.strokeStyle = '#7a3838';
+    ctx.lineWidth = 2;
+    for (let i = 1; i < 4; i++) {
+      const by = y + i * (TILE / 4);
+      ctx.beginPath(); ctx.moveTo(x + 2, by); ctx.lineTo(x + TILE - 2, by); ctx.stroke();
+    }
+    ctx.strokeStyle = '#6a3030';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
+  } else {
+    ctx.fillStyle = '#3a3040';
+    ctx.fillRect(x + 2, y + 2, TILE - 4, 4);
+    ctx.fillRect(x + 2, y + TILE - 6, TILE - 4, 4);
+  }
+}
+
+function drawBelt(gx, gy, dir) {
+  const x = gx * TILE, y = gy * TILE;
+  ctx.fillStyle = '#3a3a4a';
+  ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = '#333344';
+  ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+  const t = (Date.now() / 200) % 14;
+  ctx.fillStyle = '#5a5a70';
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x + 2, y + 2, TILE - 4, TILE - 4);
+  ctx.clip();
+  const isVert = (dir === BELT_UP || dir === BELT_DOWN);
+  const sign = (dir === BELT_DOWN || dir === BELT_RIGHT) ? 1 : -1;
+  for (let i = -1; i < 5; i++) {
+    if (isVert) {
+      const cy = y + i * 14 + t * sign;
+      ctx.beginPath();
+      if (dir === BELT_UP) {
+        ctx.moveTo(x + 6, cy + 8); ctx.lineTo(x + TILE/2, cy); ctx.lineTo(x + TILE - 6, cy + 8);
+      } else {
+        ctx.moveTo(x + 6, cy); ctx.lineTo(x + TILE/2, cy + 8); ctx.lineTo(x + TILE - 6, cy);
+      }
+      ctx.closePath(); ctx.fill();
+    } else {
+      const cx = x + i * 14 + t * sign;
+      ctx.beginPath();
+      if (dir === BELT_LEFT) {
+        ctx.moveTo(cx + 8, y + 6); ctx.lineTo(cx, y + TILE/2); ctx.lineTo(cx + 8, y + TILE - 6);
+      } else {
+        ctx.moveTo(cx, y + 6); ctx.lineTo(cx + 8, y + TILE/2); ctx.lineTo(cx, y + TILE - 6);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  ctx.restore();
+  ctx.strokeStyle = '#2a2a3a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, TILE, TILE);
+}
+
+function drawPlate(gx, gy, pressed) {
+  const x = gx * TILE, y = gy * TILE;
+  drawFloor(gx, gy);
+  const inset = pressed ? 8 : 6;
+  ctx.fillStyle = pressed ? '#6a6a50' : '#8a8a6a';
+  ctx.fillRect(x + inset, y + inset, TILE - inset*2, TILE - inset*2);
+  ctx.strokeStyle = pressed ? '#5a5a40' : '#9a9a7a';
+  ctx.lineWidth = pressed ? 1 : 2;
+  ctx.strokeRect(x + inset, y + inset, TILE - inset*2, TILE - inset*2);
+  ctx.fillStyle = pressed ? '#8a8a60' : '#aaa880';
+  ctx.beginPath();
+  ctx.arc(x + TILE/2, y + TILE/2, pressed ? 3 : 4, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawCrackedWall(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Brownish base to distinguish from normal walls
+  ctx.fillStyle = '#5a4a3e';
+  ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = '#4a3a2e';
+  ctx.fillRect(x+2, y+2, TILE/2-3, TILE/2-3);
+  ctx.fillRect(x+TILE/2+1, y+TILE/2+1, TILE/2-3, TILE/2-3);
+  ctx.fillStyle = '#6a5548';
+  ctx.fillRect(x+TILE/2+1, y+2, TILE/2-3, TILE/2-3);
+  ctx.fillRect(x+2, y+TILE/2+1, TILE/2-3, TILE/2-3);
+  // Prominent cracks
+  ctx.strokeStyle = '#1a1a1a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + TILE*0.3, y);
+  ctx.lineTo(x + TILE*0.4, y + TILE*0.25);
+  ctx.lineTo(x + TILE*0.3, y + TILE*0.45);
+  ctx.lineTo(x + TILE*0.45, y + TILE*0.6);
+  ctx.lineTo(x + TILE*0.35, y + TILE);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + TILE*0.3, y + TILE*0.45);
+  ctx.lineTo(x + TILE*0.1, y + TILE*0.55);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + TILE*0.45, y + TILE*0.6);
+  ctx.lineTo(x + TILE*0.7, y + TILE*0.55);
+  ctx.lineTo(x + TILE*0.85, y + TILE*0.7);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + TILE*0.7, y);
+  ctx.lineTo(x + TILE*0.65, y + TILE*0.2);
+  ctx.lineTo(x + TILE*0.75, y + TILE*0.35);
+  ctx.stroke();
+  // Rubble dots
+  ctx.fillStyle = '#3a2a1e';
+  ctx.fillRect(x + TILE*0.15, y + TILE*0.75, 3, 3);
+  ctx.fillRect(x + TILE*0.6, y + TILE*0.8, 4, 3);
+  ctx.fillRect(x + TILE*0.8, y + TILE*0.15, 3, 3);
+}
+
+function drawDoor(gx, gy, open) {
+  const x = gx * TILE, y = gy * TILE;
+  // Door frame
+  ctx.fillStyle = '#5a3a1a';
+  ctx.fillRect(x + 2, y, TILE - 4, TILE);
+  if (open) {
+    // Dark interior
+    ctx.fillStyle = '#0a0a14';
+    ctx.fillRect(x + 5, y + 3, TILE - 10, TILE - 3);
+    // Frame edges
+    ctx.fillStyle = '#6a4a2a';
+    ctx.fillRect(x + 2, y, 3, TILE);
+    ctx.fillRect(x + TILE - 5, y, 3, TILE);
+    ctx.fillRect(x + 2, y, TILE - 4, 3);
+    // Archway hint
+    ctx.strokeStyle = '#7a5a3a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x + TILE / 2, y + 6, TILE / 2 - 7, Math.PI, 0);
+    ctx.stroke();
+  } else {
+    // Wooden planks
+    ctx.fillStyle = '#7a5a3a';
+    ctx.fillRect(x + 4, y + 2, TILE - 8, TILE - 2);
+    ctx.strokeStyle = '#4a2a0a';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      const ly = y + i * (TILE / 4);
+      ctx.beginPath(); ctx.moveTo(x + 4, ly); ctx.lineTo(x + TILE - 4, ly); ctx.stroke();
+    }
+    // Vertical center plank
+    ctx.beginPath(); ctx.moveTo(x + TILE / 2, y + 2); ctx.lineTo(x + TILE / 2, y + TILE); ctx.stroke();
+    // Handle
+    ctx.fillStyle = '#aaa';
+    ctx.beginPath(); ctx.arc(x + TILE * 0.65, y + TILE * 0.55, 3, 0, Math.PI * 2); ctx.fill();
+    // Frame border
+    ctx.strokeStyle = '#3a1a00';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 3, y + 1, TILE - 6, TILE - 1);
+  }
+}
+
+// --- FIRE ---
+
+function spawnFire(sx, sy, dx, dy) {
+  const steps = [];
+  let cx = sx + dx, cy = sy + dy;
+  let fdx = dx, fdy = dy;
+  const FIRE_DELAY_PER_TILE = 3;
+
+  for (let i = 0; i < 1000; i++) {
+    if (cx < 0 || cx >= gameCols || cy < 0 || cy >= gameRows) break;
+    const cell = map[cy][cx];
+    const g = cell[0], s = cell[1], o = cell[2];
+    const delay = steps.length * FIRE_DELAY_PER_TILE;
+
+    // Structure layer: blocking/reflecting
+    if (s === WALL || s === PUSH_BLOCK || s === GATE_CLOSED || s === DOOR_CLOSED) break;
+    if (s === CRACKED) {
+      steps.push({ x: cx, y: cy, efx: ['crack'], fdx, fdy });
+      visualOverrides.push({ x: cx, y: cy, layer: 1, value: CRACKED, delay });
+      cell[1] = 0;
+      SFX.play('crack');
+      break;
+    }
+    if (s === MIRROR_NE) {
+      steps.push({ x: cx, y: cy, efx: [], fdx, fdy });
+      SFX.play('mirror');
+      const ndx = -fdy; fdy = -fdx; fdx = ndx;
+      cx += fdx; cy += fdy;
+      continue;
+    }
+    if (s === MIRROR_NW) {
+      steps.push({ x: cx, y: cy, efx: [], fdx, fdy });
+      SFX.play('mirror');
+      const ndx = fdy; fdy = fdx; fdx = ndx;
+      cx += fdx; cy += fdy;
+      continue;
+    }
+    // s === GRATE or s === GATE_OPEN or s === 0: fire passes through
+
+    // Apply effects immediately, push visual overrides for delayed rendering
+    const efx = [];
+    let stop = false;
+    const cargoKey = cx + ',' + cy;
+    if (g === ICE) {
+      efx.push('ice'); stop = true;
+      visualOverrides.push({ x: cx, y: cy, layer: 0, value: ICE, delay });
+      cell[0] = 0;
+      SFX.play('ice');
+    } else if (beltCargo[cargoKey] === ICE) {
+      efx.push('ice'); stop = true;
+      delete beltCargo[cargoKey];
+      SFX.play('ice');
+    } else if (g === WATER) {
+      efx.push('steam'); stop = true;
+      SFX.play('steam');
+    }
+
+    if (o === TORCH_OFF) {
+      efx.push('torch');
+      visualOverrides.push({ x: cx, y: cy, layer: 2, value: TORCH_OFF, delay });
+      cell[2] = TORCH_ON;
+      SFX.play('torch');
+    } else if (o === TOGGLE_OFF) {
+      efx.push('toggle_on');
+      visualOverrides.push({ x: cx, y: cy, layer: 2, value: TOGGLE_OFF, delay });
+      cell[2] = TOGGLE_ON;
+      applyConnectionImmediate(cx, cy, 'toggle_on', delay);
+      SFX.play('toggle');
+    } else if (o === TOGGLE_ON) {
+      efx.push('toggle_off');
+      visualOverrides.push({ x: cx, y: cy, layer: 2, value: TOGGLE_ON, delay });
+      cell[2] = TOGGLE_OFF;
+      applyConnectionImmediate(cx, cy, 'toggle_off', delay);
+      SFX.play('toggle');
+    } else if (o === LEVER_OFF) {
+      efx.push('lever_on');
+      visualOverrides.push({ x: cx, y: cy, layer: 2, value: LEVER_OFF, delay });
+      cell[2] = LEVER_ON;
+      applyConnectionImmediate(cx, cy, 'toggle_on', delay);
+      SFX.play('toggle');
+    } else if (o === LEVER_ON) {
+      efx.push('lever_off');
+      visualOverrides.push({ x: cx, y: cy, layer: 2, value: LEVER_ON, delay });
+      cell[2] = LEVER_OFF;
+      applyConnectionImmediate(cx, cy, 'toggle_off', delay);
+      SFX.play('toggle');
+    }
+
+    steps.push({ x: cx, y: cy, efx, fdx, fdy });
+    if (stop) break;
+    cx += fdx; cy += fdy;
+  }
+
+  // Spawn visual particles (map effects already applied above)
+  steps.forEach((s, i) => {
+    const delay = i * FIRE_DELAY_PER_TILE;
+    // Steam particles
+    if (s.efx.includes('steam')) {
+      for (let sp = 0; sp < 10; sp++) {
+        fireParticles.push({
+          x: s.x * TILE + TILE/2 + (Math.random()-0.5)*16,
+          y: s.y * TILE + TILE/2 + (Math.random()-0.5)*10,
+          vx: (Math.random()-0.5)*2,
+          vy: -Math.random()*2.5 - 1,
+          life: 35, maxLife: 35, delay, steam: true
+        });
+      }
+    }
+    // Fire/bullet particles
+    if (weaponMode === 'gun') {
+      for (let p = 0; p < 2; p++) {
+        fireParticles.push({
+          x: s.x * TILE + TILE/2 + (Math.random()-0.5)*4,
+          y: s.y * TILE + TILE/2 + (Math.random()-0.5)*4,
+          vx: s.fdx * 1.5 + (Math.random()-0.5)*0.5,
+          vy: s.fdy * 1.5 + (Math.random()-0.5)*0.5,
+          life: 12 + i*2, maxLife: 12 + i*2, delay,
+          bullet: true, bdx: s.fdx, bdy: s.fdy
+        });
+      }
+    } else {
+      for (let p = 0; p < 4; p++) {
+        fireParticles.push({
+          x: s.x * TILE + TILE/2 + (Math.random()-0.5)*10,
+          y: s.y * TILE + TILE/2 + (Math.random()-0.5)*10,
+          vx: (Math.random()-0.5)*2,
+          vy: (Math.random()-0.5)*2 - 1,
+          life: 30 + i*3, maxLife: 30 + i*3, delay
+        });
+      }
+    }
+  });
+  // Lead particle: blocks movement for exactly the travel duration + small buffer
+  if (steps.length > 0) {
+    const last = steps[steps.length - 1];
+    fireParticles.push({
+      x: last.x * TILE + TILE/2, y: last.y * TILE + TILE/2,
+      vx: 0, vy: 0,
+      life: (steps.length - 1) * FIRE_DELAY_PER_TILE + 5,
+      maxLife: (steps.length - 1) * FIRE_DELAY_PER_TILE + 5,
+      delay: 0, lead: true
+    });
+  }
+}
+
+function tickPendingEffects() {
+  // Only connection effects remain (from pressure plates)
+  for (let i = pendingEffects.length - 1; i >= 0; i--) {
+    const e = pendingEffects[i];
+    if (e.delay > 0) { e.delay--; continue; }
+    if (e.type === 'connection') {
+      const cell = map[e.y][e.x];
+      const props = levelCellProps[e.x + ',' + e.y] || {};
+      const reverse = !!props.reverse;
+      if (cell[1] === GATE_OPEN || cell[1] === GATE_CLOSED) {
+        const gOld = cell[1];
+        if (e.activationType === 'toggle_on') {
+          cell[1] = reverse ? GATE_OPEN : GATE_CLOSED;
+        } else if (e.activationType === 'toggle_off') {
+          cell[1] = reverse ? GATE_CLOSED : GATE_OPEN;
+        }
+        if (cell[1] !== gOld) SFX.play('gate');
+      } else if (cell[0] === WATER || cell[0] === WATER_DRY) {
+        const wOld = cell[0];
+        if (e.activationType === 'toggle_on') {
+          cell[0] = reverse ? WATER_DRY : WATER;
+        } else if (e.activationType === 'toggle_off') {
+          cell[0] = reverse ? WATER : WATER_DRY;
+        }
+        if (cell[0] !== wOld) SFX.play('water');
+      } else if (cell[2] === EYE_OFF || cell[2] === EYE_ON) {
+        if (e.activationType === 'toggle_on') {
+          cell[2] = reverse ? EYE_OFF : EYE_ON;
+        } else if (e.activationType === 'toggle_off') {
+          cell[2] = reverse ? EYE_ON : EYE_OFF;
+        }
+      }
+    }
+    pendingEffects.splice(i, 1);
+  }
+}
+
+function tickVisualOverrides() {
+  for (let i = visualOverrides.length - 1; i >= 0; i--) {
+    if (visualOverrides[i].delay > 0) {
+      visualOverrides[i].delay--;
+    } else {
+      visualOverrides.splice(i, 1);
+    }
+  }
+}
+
+// ====== CONNECTION HELPERS ======
+function getConnectionsFrom(x, y) {
+  return levelConnections.filter(c => c.from[0] === x && c.from[1] === y);
+}
+
+function getConnectionsTo(x, y) {
+  return levelConnections.filter(c => c.to[0] === x && c.to[1] === y);
+}
+
+function activateConnections(x, y, activationType) {
+  getConnectionsFrom(x, y).forEach(conn => {
+    pendingEffects.push({
+      x: conn.to[0], y: conn.to[1],
+      type: 'connection', activationType, delay: 5
+    });
+  });
+}
+
+// Apply connection effects immediately to the map + push visual overrides
+function applyConnectionImmediate(x, y, activationType, baseDelay) {
+  getConnectionsFrom(x, y).forEach(conn => {
+    const tx = conn.to[0], ty = conn.to[1];
+    const cell = map[ty][tx];
+    const props = levelCellProps[tx + ',' + ty] || {};
+    const reverse = !!props.reverse;
+    if (cell[1] === GATE_OPEN || cell[1] === GATE_CLOSED) {
+      const oldVal = cell[1];
+      if (activationType === 'toggle_on') {
+        cell[1] = reverse ? GATE_OPEN : GATE_CLOSED;
+      } else if (activationType === 'toggle_off') {
+        cell[1] = reverse ? GATE_CLOSED : GATE_OPEN;
+      }
+      if (cell[1] !== oldVal) {
+        visualOverrides.push({ x: tx, y: ty, layer: 1, value: oldVal, delay: baseDelay + 5 });
+        SFX.play('gate');
+      }
+    } else if (cell[0] === WATER || cell[0] === WATER_DRY) {
+      const oldVal = cell[0];
+      if (activationType === 'toggle_on') {
+        cell[0] = reverse ? WATER_DRY : WATER;
+      } else if (activationType === 'toggle_off') {
+        cell[0] = reverse ? WATER : WATER_DRY;
+      }
+      if (cell[0] !== oldVal) {
+        visualOverrides.push({ x: tx, y: ty, layer: 0, value: oldVal, delay: baseDelay + 5 });
+        SFX.play('water');
+      }
+    } else if (cell[2] === EYE_OFF || cell[2] === EYE_ON) {
+      const oldVal = cell[2];
+      if (activationType === 'toggle_on') {
+        cell[2] = reverse ? EYE_OFF : EYE_ON;
+      } else if (activationType === 'toggle_off') {
+        cell[2] = reverse ? EYE_ON : EYE_OFF;
+      }
+      if (cell[2] !== oldVal) {
+        visualOverrides.push({ x: tx, y: ty, layer: 2, value: oldVal, delay: baseDelay + 5 });
+      }
+    }
+  });
+}
+
+function allTorchesLit() {
+  if (visualOverrides.some(v => v.layer === 2 && (v.value === TORCH_OFF || v.value === TOGGLE_OFF))) return false;
+  for (let r = 0; r < gameRows; r++)
+    for (let c = 0; c < gameCols; c++) {
+      const o = map[r][c][2];
+      if (o === TORCH_OFF || o === TOGGLE_OFF) return false;
+    }
+  return true;
+}
+
+function levelHasDoor() {
+  for (let r = 0; r < gameRows; r++)
+    for (let c = 0; c < gameCols; c++)
+      if (map[r][c][1] === DOOR_CLOSED || map[r][c][1] === DOOR_OPEN) return true;
+  return false;
+}
+
+function levelHasTorches() {
+  for (let r = 0; r < gameRows; r++)
+    for (let c = 0; c < gameCols; c++) {
+      const o = map[r][c][2];
+      if (o === TORCH_OFF || o === TORCH_ON || o === TOGGLE_OFF || o === TOGGLE_ON) return true;
+    }
+  return false;
+}
+
+function updateDoors() {
+  const open = !levelHasTorches() || allTorchesLit();
+  for (let r = 0; r < gameRows; r++)
+    for (let c = 0; c < gameCols; c++) {
+      if (map[r][c][1] === DOOR_CLOSED && open) map[r][c][1] = DOOR_OPEN;
+      else if (map[r][c][1] === DOOR_OPEN && !open) map[r][c][1] = DOOR_CLOSED;
+    }
+}
+
+function checkWin() {
+  if (levelHasDoor()) return map[player.y][player.x][1] === DOOR_OPEN;
+  return allTorchesLit();
+}
+
+let winTimer = 0;
+
+// --- PROGRESS TRACKING ---
+
+function getProgress() {
+  try { return JSON.parse(localStorage.getItem('dragonPuzzleProgress') || '{}'); } catch(e) { return {}; }
+}
+
+function saveProgress(levelIndex) {
+  const prog = getProgress();
+  if (cheated) {
+    // Cheated: only save as cheated, don't overwrite a legit completion
+    if (packName) {
+      if (!prog.customCheated) prog.customCheated = {};
+      if (!prog.customCheated[packName]) prog.customCheated[packName] = [];
+      prog.customCheated[packName][levelIndex] = true;
+    } else {
+      if (!prog.campaignCheated) prog.campaignCheated = [];
+      prog.campaignCheated[levelIndex] = true;
+    }
+  } else {
+    // Legit completion
+    if (packName) {
+      if (!prog.custom) prog.custom = {};
+      if (!prog.custom[packName]) prog.custom[packName] = [];
+      prog.custom[packName][levelIndex] = true;
+    } else {
+      if (!prog.campaign) prog.campaign = [];
+      prog.campaign[levelIndex] = true;
+    }
+    // Drunk mode completion
+    if (drunkMode && drunkAllMoves) {
+      if (packName) {
+        if (!prog.customDrunk) prog.customDrunk = {};
+        if (!prog.customDrunk[packName]) prog.customDrunk[packName] = [];
+        prog.customDrunk[packName][levelIndex] = true;
+      } else {
+        if (!prog.campaignDrunk) prog.campaignDrunk = [];
+        prog.campaignDrunk[levelIndex] = true;
+      }
+    }
+  }
+  localStorage.setItem('dragonPuzzleProgress', JSON.stringify(prog));
+}
+
+function isLevelCompleted(levelIndex) {
+  const prog = getProgress();
+  if (packName) {
+    return prog.custom && prog.custom[packName] && prog.custom[packName][levelIndex];
+  }
+  return prog.campaign && prog.campaign[levelIndex];
+}
+
+function isCheatedCompleted(levelIndex) {
+  const prog = getProgress();
+  if (packName) {
+    return prog.customCheated && prog.customCheated[packName] && prog.customCheated[packName][levelIndex];
+  }
+  return prog.campaignCheated && prog.campaignCheated[levelIndex];
+}
+
+function isDrunkCompleted(levelIndex) {
+  const prog = getProgress();
+  if (packName) {
+    return prog.customDrunk && prog.customDrunk[packName] && prog.customDrunk[packName][levelIndex];
+  }
+  return prog.campaignDrunk && prog.campaignDrunk[levelIndex];
+}
+
+// --- STATE MANAGEMENT ---
+
+function setState(s) {
+  gameState = s;
+  document.getElementById('levelselect-overlay').style.display = s === 'levelselect' ? 'flex' : 'none';
+  document.getElementById('pause-overlay').style.display = s === 'paused' ? 'flex' : 'none';
+  document.getElementById('packbrowser-overlay').style.display = s === 'packbrowser' ? 'flex' : 'none';
+  document.getElementById('win-overlay').style.display = s === 'win' ? 'flex' : 'none';
+  document.getElementById('death-overlay').style.display = s === 'death' ? 'flex' : 'none';
+  const gameVisible = s === 'playing' || s === 'paused' || s === 'win' || s === 'death' || s === 'dying';
+  document.getElementById('ui').style.display = gameVisible ? 'block' : 'none';
+  document.getElementById('controls').style.display = s === 'playing' ? 'block' : 'none';
+  canvas.style.display = gameVisible ? 'block' : 'none';
+}
+
+function renderLevelSelect() {
+  const grid = document.getElementById('levelselect-grid');
+  grid.innerHTML = '';
+  document.getElementById('levelselect-packname').textContent = packName || 'Campaign';
+  activeLevels.forEach((lvl, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'level-btn';
+    if (isLevelCompleted(i)) btn.classList.add('completed');
+    else if (isCheatedCompleted(i)) btn.classList.add('cheated');
+    if (isDrunkCompleted(i)) btn.classList.add('drunk-completed');
+    btn.textContent = i + 1;
+    if (lvl.name) btn.title = lvl.name;
+    btn.onclick = () => {
+      SFX.play('click');
+      currentLevel = i;
+      loadLevel(i);
+      setState('playing');
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function renderPackBrowser() {
+  const list = document.getElementById('pack-list');
+  list.innerHTML = '';
+  let packs = {};
+  try { packs = JSON.parse(localStorage.getItem('dragonPuzzlePacks') || '{}'); } catch(e) {}
+  const names = Object.keys(packs);
+  if (names.length === 0) {
+    list.innerHTML = '<p style="color:#888">No saved packs yet. Create one in the Level Editor!</p>';
+    return;
+  }
+  names.forEach(name => {
+    const pack = packs[name];
+    const btn = document.createElement('button');
+    btn.className = 'menu-btn pack-btn';
+    const count = pack.levels ? pack.levels.length : 0;
+    btn.innerHTML = '<strong>' + name + '</strong><br><span style="color:#888">' + count + ' level' + (count !== 1 ? 's' : '') + '</span>';
+    btn.onclick = () => {
+      const migrated = migratePack(JSON.parse(JSON.stringify(pack)));
+      activeLevels = migrated.levels;
+      packName = name;
+      renderLevelSelect();
+      setState('levelselect');
+    };
+    list.appendChild(btn);
+  });
+}
+
+// --- MENU ACTIONS ---
+
+function goMainMenu() {
+  window.location = 'index.html';
+}
+
+function resumeGame() {
+  setState('playing');
+}
+
+function restartLevel() {
+  loadLevel(currentLevel);
+  setState('playing');
+}
+
+let deathTimer = 0;
+function killPlayer() {
+  if (gameState !== 'playing') return;
+  deathTimer = 0;
+  gameState = 'dying';
+  SFX.play('death');
+}
+
+function showLevelSelect() {
+  renderLevelSelect();
+  setState('levelselect');
+}
+
+function nextLevel() {
+  if (currentLevel < activeLevels.length - 1) {
+    currentLevel++;
+    loadLevel(currentLevel);
+    setState('playing');
+  } else {
+    showLevelSelect();
+  }
+}
+
+function loadShareCode() {
+  const input = document.getElementById('share-code-input');
+  const code = input.value.trim();
+  if (!code) return;
+  try {
+    const b64 = code.startsWith('DRAGONPACK:') ? code.slice(11) : code;
+    const json = decodeURIComponent(escape(atob(b64)));
+    const data = migratePack(JSON.parse(json));
+    if (data && data.levels && data.levels.length) {
+      activeLevels = data.levels;
+      packName = data.name || 'Shared';
+      renderLevelSelect();
+      setState('levelselect');
+    } else {
+      alert('Invalid pack data');
+    }
+  } catch(e) {
+    alert('Invalid share code');
+  }
+}
+
+// --- INPUT ---
+
+document.addEventListener('keydown', e => {
+  // Console toggle
+  if (e.code === 'Backquote') {
+    e.preventDefault();
+    if (!dragamonActive && !newsActive && !dialogueActive) toggleConsole();
+    return;
+  }
+
+  // Block game input while console or dragamon or captcha or news or dialogue is open
+  if (consoleOpen || dragamonActive || captchaActive || newsActive || dialogueActive) return;
+
+  // Custom key bindings
+  if (keyBindings[e.code]) {
+    e.preventDefault();
+    execCommand(keyBindings[e.code]);
+    return;
+  }
+
+  // Escape handling
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    if (gameState === 'playing') { setState('paused'); return; }
+    if (gameState === 'paused') { resumeGame(); return; }
+    return;
+  }
+
+  // Only process game input when playing
+  if (gameState !== 'playing') return;
+  // Block input while fire is still traveling
+  if (fireParticles.some(p => p.lead)) return;
+
+  // Save undo state before any action
+  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD') {
+    saveUndo();
+  }
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (maxFire > 0 && fireUsed >= maxFire && !godMode) return;
+    // Can't breathe fire while standing in water (check ground layer)
+    if (map[player.y][player.x][0] === WATER) {
+      for (let p = 0; p < 6; p++) {
+        fireParticles.push({
+          x: player.x * TILE + TILE/2 + (Math.random()-0.5)*12,
+          y: player.y * TILE + TILE/4 + (Math.random()-0.5)*8,
+          vx: (Math.random()-0.5)*1.5,
+          vy: -Math.random()*2 - 0.5,
+          life: 20, maxLife: 20, delay: 0, steam: true
+        });
+      }
+      SFX.play('steam');
+      return;
+    }
+    spawnFire(player.x, player.y, facing.x, facing.y);
+    SFX.play('fire');
+    fireUsed++;
+    // Fire counts as a "turn" for belts and plates
+    const beltGF = map[player.y][player.x][0];
+    if (beltGF >= BELT_UP && beltGF <= BELT_LEFT) {
+      const beltDirsF = [[0,-1],[1,0],[0,1],[-1,0]];
+      const [bdxF, bdyF] = beltDirsF[beltGF - BELT_UP];
+      const bxF = player.x + bdxF, byF = player.y + bdyF;
+      if (bxF >= 0 && bxF < gameCols && byF >= 0 && byF < gameRows) {
+        const bcF = map[byF][bxF];
+        if (bcF[1] !== WALL && bcF[1] !== MIRROR_NE && bcF[1] !== MIRROR_NW && bcF[1] !== GRATE && bcF[1] !== GATE_CLOSED && bcF[1] !== PUSH_BLOCK && bcF[1] !== CRACKED && bcF[1] !== DOOR_CLOSED && bcF[1] !== DOOR_OPEN && bcF[0] !== ICE) {
+          player.x = bxF; player.y = byF;
+          SFX.play('belt');
+        }
+      }
+    }
+    // Spike death after fire belt push
+    if (map[player.y][player.x][0] === SPIKE && !noclipOn && !godMode) { killPlayer(); return; }
+    tickBelts();
+    updatePlates();
+    updateFacingForEyes();
+    return;
+  }
+  if (e.code === 'KeyR') { loadLevel(currentLevel); return; }
+
+  // Interact with adjacent paper or dragon NPC (E key)
+  if (e.code === 'KeyE') {
+    e.preventDefault();
+    const dirs = [[0,-1],[1,0],[0,1],[-1,0]];
+    for (const [ddx, ddy] of dirs) {
+      const nx = player.x + ddx, ny = player.y + ddy;
+      if (nx >= 0 && nx < gameCols && ny >= 0 && ny < gameRows) {
+        const d3 = map[ny][nx][3];
+        if (d3 === PAPER) {
+          const props = levelCellProps[nx + ',' + ny] || {};
+          showNewspaper(props.paperText || 'The page is blank.', props.paperSubtitle);
+          return;
+        }
+        if (d3 === DRAGON_NPC) {
+          const props = levelCellProps[nx + ',' + ny] || {};
+          showDialogue(props.npcText || 'The dragon stares silently.', props.npcName || 'Dragon', props.npcColor);
+          return;
+        }
+        const d4 = map[ny][nx][4];
+        if (d4 === PAPER) {
+          const props = levelCellProps[nx + ',' + ny] || {};
+          showNewspaper(props.paperText || 'The page is blank.', props.paperSubtitle);
+          return;
+        }
+        if (d4 === DRAGON_NPC) {
+          const props = levelCellProps[nx + ',' + ny] || {};
+          showDialogue(props.npcText || 'The dragon stares silently.', props.npcName || 'Dragon', props.npcColor);
+          return;
+        }
+      }
+    }
+    // Also check the tile the player is standing on
+    const d3s = map[player.y][player.x][3];
+    if (d3s === PAPER) {
+      const props = levelCellProps[player.x + ',' + player.y] || {};
+      showNewspaper(props.paperText || 'The page is blank.', props.paperSubtitle);
+      return;
+    }
+    if (d3s === DRAGON_NPC) {
+      const props = levelCellProps[player.x + ',' + player.y] || {};
+      showDialogue(props.npcText || 'The dragon stares silently.', props.npcName || 'Dragon', props.npcColor);
+      return;
+    }
+    const d4s = map[player.y][player.x][4];
+    if (d4s === PAPER) {
+      const props = levelCellProps[player.x + ',' + player.y] || {};
+      showNewspaper(props.paperText || 'The page is blank.', props.paperSubtitle);
+      return;
+    }
+    if (d4s === DRAGON_NPC) {
+      const props = levelCellProps[player.x + ',' + player.y] || {};
+      showDialogue(props.npcText || 'The dragon stares silently.', props.npcName || 'Dragon', props.npcColor);
+      return;
+    }
+    return;
+  }
+
+  let dx = 0, dy = 0;
+  if (e.code === 'ArrowUp' || e.code === 'KeyW') dy = -1;
+  else if (e.code === 'ArrowDown' || e.code === 'KeyS') dy = 1;
+  else if (e.code === 'ArrowLeft' || e.code === 'KeyA') dx = -1;
+  else if (e.code === 'ArrowRight' || e.code === 'KeyD') dx = 1;
+  else return;
+
+  // Track if any move was made without drunk mode
+  if (!drunkMode) drunkAllMoves = false;
+
+  // Drunk mode: 50% chance to scramble direction
+  if (drunkMode && Math.random() < 0.5) {
+    const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+    const pick = dirs[Math.floor(Math.random() * 4)];
+    dx = pick[0]; dy = pick[1];
+  }
+  e.preventDefault();
+
+  if (dx !== 0 || dy !== 0) {
+    facing = { x: dx, y: dy };
+  }
+
+  // Move (check layers)
+  const nx = player.x + dx;
+  const ny = player.y + dy;
+  if (nx >= 0 && nx < gameCols && ny >= 0 && ny < gameRows) {
+    if (noclipOn) {
+      player.x = nx; player.y = ny;
+      SFX.play('move');
+    } else {
+      const cell = map[ny][nx];
+      const st = cell[1]; // structure layer
+      if (st === WALL || st === MIRROR_NE || st === MIRROR_NW || st === GRATE || st === GATE_CLOSED || st === CRACKED || st === DOOR_CLOSED) {
+        // Blocked by structure
+      } else if (cell[3] === DRAGON_NPC || cell[4] === DRAGON_NPC) {
+        // Blocked by NPC
+      } else if (st === PUSH_BLOCK) {
+        if (tryPush(nx, ny, dx, dy)) { player.x = nx; player.y = ny; SFX.play('push'); }
+      } else if (cell[0] === ICE) {
+        if (tryPush(nx, ny, dx, dy)) { player.x = nx; player.y = ny; SFX.play('push'); }
+      } else {
+        player.x = nx;
+        player.y = ny;
+        SFX.play('move');
+      }
+    }
+  }
+
+  // Belt push
+  const beltG = map[player.y][player.x][0];
+  if (beltG >= BELT_UP && beltG <= BELT_LEFT) {
+    const beltDirs = [[0,-1],[1,0],[0,1],[-1,0]];
+    const [bdx, bdy] = beltDirs[beltG - BELT_UP];
+    const bx = player.x + bdx, by = player.y + bdy;
+    if (bx >= 0 && bx < gameCols && by >= 0 && by < gameRows) {
+      const bc = map[by][bx];
+      if (bc[1] !== WALL && bc[1] !== MIRROR_NE && bc[1] !== MIRROR_NW && bc[1] !== GRATE && bc[1] !== GATE_CLOSED && bc[1] !== PUSH_BLOCK && bc[1] !== CRACKED && bc[1] !== DOOR_CLOSED && bc[1] !== DOOR_OPEN && bc[0] !== ICE) {
+        player.x = bx; player.y = by;
+        SFX.play('belt');
+      }
+    }
+  }
+
+  // Spike death check
+  if (map[player.y][player.x][0] === SPIKE && !noclipOn && !godMode) { killPlayer(); return; }
+
+  // Paint trail
+  if (paintMode) {
+    paintTrail.push({ x: player.x, y: player.y, hue: (Date.now() / 3) % 360 });
+  }
+
+  // Push objects on belts, then update pressure plates
+  tickBelts();
+  updatePlates();
+  updateFacingForEyes();
+  checkIfRules();
+});
+
+// --- DRAW LOOP ---
+
+function draw() {
+  tickPendingEffects();
+  tickVisualOverrides();
+  updateFacingForEyes();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Build visual override lookup for this frame
+  const voMap = {};
+  visualOverrides.forEach(v => { voMap[v.x + ',' + v.y + ',' + v.layer] = v.value; });
+
+  // Draw tiles (3 layers: ground, structure, object)
+  for (let r = 0; r < gameRows; r++) {
+    for (let c = 0; c < gameCols; c++) {
+      drawFloor(c, r);
+      const cell = map[r][c];
+      // Use visual override if active, otherwise actual map value
+      const g = (voMap[c+','+r+',0'] !== undefined) ? voMap[c+','+r+',0'] : cell[0];
+      const s = (voMap[c+','+r+',1'] !== undefined) ? voMap[c+','+r+',1'] : cell[1];
+      const o = (voMap[c+','+r+',2'] !== undefined) ? voMap[c+','+r+',2'] : cell[2];
+      // Layer 0: ground
+      if (g === ICE) drawIce(c, r);
+      else if (g === WATER) drawWater(c, r);
+      else if (g === WATER_DRY) drawWaterDry(c, r);
+      else if (g >= BELT_UP && g <= BELT_LEFT) drawBelt(c, r, g);
+      else if (g === PLATE) drawPlate(c, r, pressedPlates.has(c + ',' + r));
+      else if (g === SPIKE) drawSpike(c, r);
+      // Belt cargo (ice riding on belts)
+      if (beltCargo[c + ',' + r] === ICE) drawIce(c, r);
+      // Layer 1: structure
+      if (s === WALL) drawWall(c, r);
+      else if (s === MIRROR_NE || s === MIRROR_NW) drawMirror(c, r, s);
+      else if (s === GRATE) drawGrate(c, r);
+      else if (s === PUSH_BLOCK) drawPushBlock(c, r);
+      else if (s === GATE_CLOSED) drawGate(c, r, true);
+      else if (s === GATE_OPEN) drawGate(c, r, false);
+      else if (s === CRACKED) drawCrackedWall(c, r);
+      else if (s === DOOR_CLOSED) drawDoor(c, r, false);
+      else if (s === DOOR_OPEN) drawDoor(c, r, true);
+      // Layer 2: object
+      if (o === TORCH_OFF) drawTorch(c, r, false);
+      else if (o === TORCH_ON) drawTorch(c, r, true);
+      else if (o === TOGGLE_OFF) drawToggleTorch(c, r, false);
+      else if (o === TOGGLE_ON) drawToggleTorch(c, r, true);
+      else if (o === LEVER_OFF) drawLever(c, r, false);
+      else if (o === LEVER_ON) drawLever(c, r, true);
+      else if (o === EYE_OFF) drawEye(c, r, false);
+      else if (o === EYE_ON) drawEye(c, r, true);
+      // Layer 3: deco
+      const d = cell[3];
+      let decoRotated = false;
+      if (d && ROTATABLE_DECO.has(d)) {
+        const rot = (levelCellProps[c+','+r] || {}).rotation || 0;
+        if (rot) { decoRotated = true; ctx.save(); ctx.translate(c*TILE+TILE/2, r*TILE+TILE/2); ctx.rotate(rot*Math.PI/2); ctx.translate(-(c*TILE+TILE/2), -(r*TILE+TILE/2)); }
+      }
+      if (d === SKULL) drawSkull(c, r);
+      else if (d === BONES) drawBones(c, r);
+      else if (d === COBWEB) drawCobweb(c, r);
+      else if (d === MUSHROOM) drawMushroom(c, r);
+      else if (d === GEAR) drawGear(c, r);
+      else if (d === PIPE) drawPipe(c, r);
+      else if (d === CRATE) drawCrate(c, r);
+      else if (d === PAPER) drawPaper(c, r);
+      else if (d === RAILWAY) drawRailway(c, r);
+      else if (d === ROAD) drawRoad(c, r);
+      else if (d === LAMPPOST) drawLamppost(c, r);
+      else if (d === BENCH) drawBench(c, r);
+      else if (d === FOUNTAIN) drawFountain(c, r);
+      else if (d === DRAGON_NPC) {
+        const np = levelCellProps[c+','+r] || {};
+        const nf = [[1,0],[0,1],[-1,0],[0,-1]][np.npcFacing||0];
+        drawDragonNPC(c, r, nf[0], nf[1], np.npcColor);
+      }
+      if (decoRotated) ctx.restore();
+      // Layer 4: deco2
+      const d2 = cell[4];
+      let deco2Rotated = false;
+      if (d2 && ROTATABLE_DECO.has(d2)) {
+        const rot = (levelCellProps[c+','+r] || {}).rotation || 0;
+        if (rot) { deco2Rotated = true; ctx.save(); ctx.translate(c*TILE+TILE/2, r*TILE+TILE/2); ctx.rotate(rot*Math.PI/2); ctx.translate(-(c*TILE+TILE/2), -(r*TILE+TILE/2)); }
+      }
+      if (d2 === SKULL) drawSkull(c, r);
+      else if (d2 === BONES) drawBones(c, r);
+      else if (d2 === COBWEB) drawCobweb(c, r);
+      else if (d2 === MUSHROOM) drawMushroom(c, r);
+      else if (d2 === GEAR) drawGear(c, r);
+      else if (d2 === PIPE) drawPipe(c, r);
+      else if (d2 === CRATE) drawCrate(c, r);
+      else if (d2 === PAPER) drawPaper(c, r);
+      else if (d2 === RAILWAY) drawRailway(c, r);
+      else if (d2 === ROAD) drawRoad(c, r);
+      else if (d2 === LAMPPOST) drawLamppost(c, r);
+      else if (d2 === BENCH) drawBench(c, r);
+      else if (d2 === FOUNTAIN) drawFountain(c, r);
+      else if (d2 === DRAGON_NPC) {
+        const np = levelCellProps[c+','+r] || {};
+        const nf = [[1,0],[0,1],[-1,0],[0,-1]][np.npcFacing||0];
+        drawDragonNPC(c, r, nf[0], nf[1], np.npcColor);
+      }
+      if (deco2Rotated) ctx.restore();
+    }
+  }
+
+  // Console grid overlay
+  if (consoleOpen) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let c = 0; c <= gameCols; c++) {
+      ctx.beginPath(); ctx.moveTo(c * TILE, 0); ctx.lineTo(c * TILE, gameRows * TILE); ctx.stroke();
+    }
+    for (let r = 0; r <= gameRows; r++) {
+      ctx.beginPath(); ctx.moveTo(0, r * TILE); ctx.lineTo(gameCols * TILE, r * TILE); ctx.stroke();
+    }
+    // Coordinate labels
+    for (let r = 0; r < gameRows; r++) {
+      for (let c = 0; c < gameCols; c++) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(c * TILE, r * TILE, 22, 11);
+        ctx.fillStyle = 'rgba(255,255,0,0.7)';
+        ctx.fillText(c + ',' + r, c * TILE + 11, r * TILE + 1);
+      }
+    }
+    ctx.restore();
+  }
+
+  // Connection highlight overlay
+  if (highlightConns && levelConnections.length > 0) {
+    ctx.save();
+    ctx.lineWidth = 2;
+    levelConnections.forEach((conn, i) => {
+      const fx = conn.from[0] * TILE + TILE / 2, fy = conn.from[1] * TILE + TILE / 2;
+      const tx = conn.to[0] * TILE + TILE / 2, ty = conn.to[1] * TILE + TILE / 2;
+      const hue = (i * 60) % 360;
+      ctx.strokeStyle = 'hsla(' + hue + ',80%,60%,0.7)';
+      ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
+      // Arrow head
+      const angle = Math.atan2(ty - fy, tx - fx);
+      ctx.fillStyle = 'hsla(' + hue + ',80%,60%,0.9)';
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx - 8 * Math.cos(angle - 0.4), ty - 8 * Math.sin(angle - 0.4));
+      ctx.lineTo(tx - 8 * Math.cos(angle + 0.4), ty - 8 * Math.sin(angle + 0.4));
+      ctx.closePath(); ctx.fill();
+      // Source dot
+      ctx.fillStyle = 'hsla(' + hue + ',80%,70%,0.8)';
+      ctx.beginPath(); ctx.arc(fx, fy, 4, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  // Fire counter
+  if (maxFire > 0) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(4, canvas.height - 24, 120, 20);
+    ctx.fillStyle = fireUsed >= maxFire ? '#ff4444' : '#ff9900';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'left';
+    const weapLabel = weaponMode === 'gun' ? 'Ammo' : 'Fire';
+    ctx.fillText(`${weapLabel}: ${maxFire - fireUsed} / ${maxFire}`, 8, canvas.height - 8);
+  }
+
+  // Paint trail
+  if (paintTrail.length > 0) {
+    paintTrail.forEach((pt, i) => {
+      const alpha = 0.3 + 0.4 * (i / paintTrail.length);
+      ctx.fillStyle = `hsla(${pt.hue}, 80%, 55%, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(pt.x * TILE + TILE/2, pt.y * TILE + TILE/2, TILE * 0.2, 0, Math.PI*2);
+      ctx.fill();
+    });
+  }
+
+  // Draw dragon
+  drawDragon(player.x, player.y, facing.x, facing.y);
+
+  // Draw fire/bullet particles
+  fireParticles.forEach(p => {
+    if (p.delay > 0) { p.delay--; return; }
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    if (p.lead) return; // invisible marker, not drawn
+    const alpha = p.life / p.maxLife;
+    if (p.steam) {
+      const size = 3 + (1 - alpha) * 4;
+      ctx.fillStyle = `rgba(200,210,220,${alpha * 0.7})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill();
+    } else if (p.bullet) {
+      ctx.fillStyle = `rgba(255,220,60,${alpha})`;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(Math.atan2(p.bdy || 0, p.bdx || 1));
+      ctx.fillRect(-4, -1.5, 8, 3);
+      ctx.restore();
+      // muzzle flash trail
+      ctx.fillStyle = `rgba(255,255,200,${alpha * 0.4})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
+    } else {
+      const size = 3 + (1 - alpha) * 4;
+      ctx.fillStyle = `rgba(255,${Math.floor(100 + 100*alpha)},0,${alpha})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill();
+    }
+  });
+  fireParticles = fireParticles.filter(p => p.life > 0 || p.delay > 0);
+
+  // Update door states based on torch state
+  if (gameState === 'playing') updateDoors();
+  // Win check (only during gameplay)
+  if (gameState === 'playing' && checkWin()) {
+    winTimer++;
+    // Brief celebration on canvas before showing overlay
+    const alpha = Math.min(winTimer / 30, 1);
+    ctx.fillStyle = `rgba(255,200,50,${alpha * 0.8})`;
+    ctx.font = 'bold 32px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Level Complete!', canvas.width/2, canvas.height/2);
+    if (winTimer >= 50) {
+      saveProgress(currentLevel);
+      const isLast = currentLevel >= activeLevels.length - 1;
+      document.getElementById('win-title').textContent = isLast ? 'All Levels Complete!' : 'Level Complete!';
+      document.getElementById('win-next-btn').style.display = isLast ? 'none' : 'block';
+      setState('win');
+      SFX.play('win');
+    }
+  } else if (gameState === 'playing') {
+    winTimer = 0;
+  }
+
+  // Death animation
+  if (gameState === 'dying') {
+    deathTimer++;
+    const alpha = Math.min(deathTimer / 30, 1);
+    ctx.fillStyle = `rgba(255,0,0,${alpha * 0.6})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = `rgba(255,68,68,${alpha})`;
+    ctx.font = 'bold 32px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('You Died!', canvas.width / 2, canvas.height / 2);
+    if (deathTimer >= 50) {
+      setState('death');
+    }
+  }
+
+  // Cheat border (yellow) or drunk run border (teal)
+  if (cheated) {
+    ctx.save();
+    ctx.strokeStyle = '#c4a800';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+    ctx.restore();
+  } else if (drunkMode && drunkAllMoves) {
+    ctx.save();
+    ctx.strokeStyle = '#2ab5a0';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+    ctx.restore();
+  }
+
+  requestAnimationFrame(draw);
+}
+
+// --- CONSOLE ---
+
+const conEl = document.getElementById('console-overlay');
+const conLog = document.getElementById('console-log');
+const conInput = document.getElementById('console-input');
+const conAC = document.getElementById('console-autocomplete');
+let consoleOpen = false;
+let conHistory = [];
+let conHistIdx = -1;
+let acIndex = -1;
+let cheated = false;
+let noclipOn = false;
+let godMode = false;
+let discoMode = false;
+let drunkMode = false;
+let drunkAllMoves = true;
+let paintMode = false;
+let paintTrail = [];
+let highlightConns = false;
+let keyBindings = {}; // {keyCode: "command string"}
+function normalizeKeyCode(raw) {
+  const s = raw.trim();
+  // Already proper format (e.g. KeyQ, F1, Digit3)
+  const known = ['Backquote','Minus','Equal','BracketLeft','BracketRight','Backslash','Semicolon','Quote','Comma','Period','Slash','Backspace','Tab','Enter','ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','Space','Insert','Delete','Home','End','PageUp','PageDown'];
+  if (known.includes(s)) return s;
+  if (/^Key[A-Z]$/.test(s)) return s;
+  if (/^Digit[0-9]$/.test(s)) return s;
+  if (/^F\d{1,2}$/.test(s)) return s;
+  // Single letter -> KeyX
+  if (/^[a-zA-Z]$/.test(s)) return 'Key' + s.toUpperCase();
+  // Single digit -> DigitX
+  if (/^[0-9]$/.test(s)) return 'Digit' + s;
+  // Lowercase variants: f1 -> F1, keyq -> KeyQ, digit3 -> Digit3
+  if (/^f\d{1,2}$/i.test(s)) return 'F' + s.slice(1);
+  if (/^key[a-z]$/i.test(s)) return 'Key' + s.slice(3).toUpperCase();
+  if (/^digit[0-9]$/i.test(s)) return 'Digit' + s.slice(5);
+  return s;
+}
+
+// Tile name lookup for setpos
+const TILE_NAMES = {
+  empty:0, wall:1, torch_off:2, torch_on:3, ice:4, mirror_ne:5, mirror_nw:6,
+  exit:7, grate:8, push_block:9, water:10, toggle_off:11, toggle_on:12,
+  gate_open:13, gate_closed:14, lever_off:15, lever_on:16, water_dry:17,
+  belt_up:18, belt_right:19, belt_down:20, belt_left:21, plate:22, cracked:23,
+  eye_off:24, eye_on:25, skull:26, bones:27, cobweb:28, mushroom:29,
+  gear:30, pipe:31, crate:32, spike:33, paper:34, door_closed:35, door_open:36,
+  railway:37, road:38, lamppost:39, bench:40, fountain:41, dragon_npc:42
+};
+
+function markCheat() {
+  if (!cheated) {
+    cheated = true;
+    conPrint('Cheats activated - border is now yellow', 'info');
+  }
+}
+
+// Commands that appear in autocomplete (NOT supercalifragilisticexpialawin)
+const CONSOLE_CMDS = ['setpos', '/impossible', 'shoot', 'ball_of_fire', 'dragamon',
+  'help', 'clear', 'tp', 'noclip', 'god', 'inspect', 'fill', 'reset', 'time', 'rename',
+  'explode', 'light', 'dark', 'swap', 'disco', 'drunk', 'mirror', 'paintball', 'rain', 'size',
+  'skip', 'goto', 'count', 'progress', 'undo', 'connections',
+  'state', 'assign', 'unassign', 'props', 'trigger', 'where', 'tiles', 'highlight',
+  'give_up', 'captcha', 'if', 'echo', 'news', 'pretend_you_didint_see_that', 'force_exit', 'mute', 'volume'];
+
+let conIfRules = [];
+let conIfRunning = false;
+
+function describeIfRule(r) {
+  return r.conditions.map(c => {
+    if (c.type === 'console') return 'console ' + c.text;
+    if (c.type === 'level') return 'level ' + c.level;
+    if (c.type === 'grid') return 'grid ' + c.x + ' ' + c.y + ' ' + c.state;
+    return '?';
+  }).join(' and ');
+}
+
+function checkGridState(x, y, state) {
+  if (x < 0 || x >= gameCols || y < 0 || y >= gameRows) return false;
+  const cell = map[y][x];
+  switch (state) {
+    case 'lit': return cell[2] === TORCH_ON || cell[2] === TOGGLE_ON || cell[2] === EYE_ON;
+    case 'unlit': return cell[2] === TORCH_OFF || cell[2] === TOGGLE_OFF || cell[2] === EYE_OFF;
+    case 'open': return cell[1] === GATE_OPEN;
+    case 'closed': return cell[1] === GATE_CLOSED;
+    case 'water': return cell[0] === WATER;
+    case 'dry': return cell[0] === WATER_DRY;
+    case 'wall': return cell[1] === WALL;
+    case 'empty': return cell[0] === EMPTY && cell[1] === EMPTY && cell[2] === EMPTY;
+    case 'player': return player.x === x && player.y === y;
+    default: return false;
+  }
+}
+
+function checkCondition(c) {
+  if (c.type === 'level') return (currentLevel + 1) === c.level;
+  if (c.type === 'grid') return checkGridState(c.x, c.y, c.state);
+  return false; // console conditions handled separately in conPrint
+}
+
+function checkIfRules() {
+  if (conIfRunning || gameState !== 'playing') return;
+  for (const r of conIfRules) {
+    // Skip rules with console conditions — those fire from conPrint
+    if (r.conditions.some(c => c.type === 'console')) continue;
+    const met = r.conditions.every(c => checkCondition(c));
+    if (met && !r.wasMet) {
+      r.wasMet = true;
+      conIfRunning = true;
+      execCommand(r.cmd);
+      conIfRunning = false;
+    } else if (!met) {
+      r.wasMet = false;
+    }
+  }
+}
+
+function conPrint(text, cls) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  if (cls) d.className = cls;
+  conLog.appendChild(d);
+  conLog.scrollTop = conLog.scrollHeight;
+  if (!conIfRunning && text) {
+    const matching = conIfRules.filter(r => {
+      const consoleCond = r.conditions.find(c => c.type === 'console');
+      if (!consoleCond) return false;
+      if (!text.includes(consoleCond.text)) return false;
+      // Check all non-console conditions too
+      return r.conditions.every(c => c.type === 'console' ? true : checkCondition(c));
+    });
+    if (matching.length > 0) {
+      conIfRunning = true;
+      matching.forEach(r => execCommand(r.cmd));
+      conIfRunning = false;
+    }
+  }
+}
+
+function toggleConsole() {
+  consoleOpen = !consoleOpen;
+  conEl.classList.toggle('active', consoleOpen);
+  if (consoleOpen) {
+    conInput.value = '';
+    conInput.focus();
+    conHistIdx = -1;
+    hideAC();
+  }
+}
+
+function hideAC() {
+  conAC.style.display = 'none';
+  conAC.innerHTML = '';
+  acIndex = -1;
+}
+
+function showAC(matches) {
+  conAC.innerHTML = '';
+  if (matches.length === 0) { hideAC(); return; }
+  matches.forEach((m, i) => {
+    const d = document.createElement('div');
+    d.textContent = m;
+    d.onclick = () => { conInput.value = m + ' '; hideAC(); conInput.focus(); };
+    conAC.appendChild(d);
+  });
+  conAC.style.display = 'block';
+  acIndex = -1;
+}
+
+function buildACItems(items, onPick) {
+  conAC.innerHTML = '';
+  items.forEach(item => {
+    const d = document.createElement('div');
+    d.textContent = item.label;
+    d.dataset.value = item.value;
+    d.onclick = () => { onPick(item.value); hideAC(); conInput.focus(); };
+    conAC.appendChild(d);
+  });
+  conAC.style.display = 'block';
+  acIndex = -1;
+}
+
+function acCoords(partial, max) {
+  const coords = [];
+  for (let i = 0; i < max; i++) {
+    const s = String(i);
+    if (s.startsWith(partial)) coords.push({ label: (max === gameCols ? 'x=' : 'y=') + i, value: s });
+  }
+  return coords;
+}
+
+function acBlocks(partial) {
+  const matches = [];
+  Object.keys(TILE_NAMES).forEach(n => {
+    if (n.startsWith(partial)) matches.push({ label: n + ' (' + TILE_NAMES[n] + ')', value: n });
+  });
+  if (/^\d/.test(partial)) {
+    for (let i = 0; i <= 32; i++) {
+      const s = String(i);
+      if (s.startsWith(partial)) {
+        const name = Object.keys(TILE_NAMES).find(k => TILE_NAMES[k] === i) || '?';
+        if (!matches.some(m => m.value === s)) matches.push({ label: i + ' (' + name + ')', value: s });
+      }
+    }
+  }
+  return matches;
+}
+
+function updateAC() {
+  const raw = conInput.value.toLowerCase();
+  const val = raw.trim();
+  if (!val) { hideAC(); return; }
+  const parts = val.split(/\s+/);
+  if (raw.endsWith(' ')) parts.push('');
+  const cmd = parts[0];
+  const prefix = () => parts.slice(0, -1).join(' ') + ' ';
+
+  if (parts.length > 1) {
+    // Commands with: <x> <y> <block>  (setpos)
+    if (cmd === 'setpos') {
+      if (parts.length === 2) { const c = acCoords(parts[1], gameCols); if (c.length > 0 && c.length <= 12) { buildACItems(c, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 3) { const c = acCoords(parts[2], gameRows); if (c.length > 0 && c.length <= 12) { buildACItems(c, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 4) { const m = acBlocks(parts[3]); if (m.length > 0 && m.length <= 12) { buildACItems(m, v => { conInput.value = prefix() + v; }); return; } }
+    }
+    // Commands with: <x> <y>  (tp, inspect)
+    else if (cmd === 'tp' || cmd === 'inspect') {
+      if (parts.length === 2) { const c = acCoords(parts[1], gameCols); if (c.length > 0 && c.length <= 12) { buildACItems(c, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 3) { const c = acCoords(parts[2], gameRows); if (c.length > 0 && c.length <= 12) { buildACItems(c, v => { conInput.value = prefix() + v; }); return; } }
+    }
+    // swap: <x1> <y1> <x2> <y2>
+    else if (cmd === 'swap') {
+      if (parts.length === 2 || parts.length === 4) { const c = acCoords(parts[parts.length-1], gameCols); if (c.length > 0 && c.length <= 12) { buildACItems(c, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 3 || parts.length === 5) { const c = acCoords(parts[parts.length-1], gameRows); if (c.length > 0 && c.length <= 12) { buildACItems(c, v => { conInput.value = prefix() + v + ' '; }); return; } }
+    }
+    // fill: <x1> <y1> <x2> <y2> <block>
+    else if (cmd === 'fill') {
+      if (parts.length === 2 || parts.length === 4) { const c = acCoords(parts[parts.length-1], gameCols); if (c.length > 0 && c.length <= 12) { buildACItems(c, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 3 || parts.length === 5) { const c = acCoords(parts[parts.length-1], gameRows); if (c.length > 0 && c.length <= 12) { buildACItems(c, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 6) { const m = acBlocks(parts[5]); if (m.length > 0 && m.length <= 12) { buildACItems(m, v => { conInput.value = prefix() + v; }); return; } }
+    }
+    // state: get/edit <key> [value]
+    else if (cmd === 'state') {
+      const subs = ['get', 'edit'];
+      const allKeys = ['player_x','player_y','facing_x','facing_y','fire_used','max_fire','noclip','god','cheated','disco','drunk','highlight','win_timer','death_timer','game_state','level','cols','rows','particles','pending','overrides','plates','connections'];
+      const editKeys = ['player_x','player_y','facing_x','facing_y','fire_used','max_fire','noclip','god','cheated','disco','drunk','highlight','win_timer','death_timer','game_state','level'];
+      if (parts.length === 2) { const p = parts[1]; const m = subs.filter(s => s.startsWith(p) && s !== p).map(s => ({label:s,value:s})); if (m.length > 0) { buildACItems(m, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 3) { const sub = parts[1]; const p = parts[2]; const keys = sub === 'edit' ? editKeys : allKeys; const m = keys.filter(k => k.startsWith(p) && k !== p).map(k => ({label:k,value:k})); if (m.length > 0 && m.length <= 12) { buildACItems(m, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 4 && parts[1] === 'edit') { const p = parts[3]; const m = ['0','1'].filter(v => v.startsWith(p) && v !== p).map(v => ({label:v,value:v})); if (m.length > 0) { buildACItems(m, v => { conInput.value = prefix() + v; }); return; } }
+    }
+    // assign: <key> <command>
+    else if (cmd === 'assign') {
+      const acKeys = ['q','e','f','g','h','j','k','l','z','x','c','v','b','n','m','1','2','3','4','5','6','7','8','9','0','F1','F2','F3','F4','F5','F6','F7','F8','F9'];
+      if (parts.length === 2) { const p = parts[1]; const m = acKeys.filter(k => k.toLowerCase().startsWith(p.toLowerCase()) && k.toLowerCase() !== p.toLowerCase()).map(k => ({label:k,value:k})); if (m.length > 0 && m.length <= 12) { buildACItems(m, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      else if (parts.length === 3) { const p = parts[2]; const m = CONSOLE_CMDS.filter(c => c.startsWith(p) && c !== p).map(c => ({label:c,value:c})); if (m.length > 0 && m.length <= 12) { buildACItems(m, v => { conInput.value = prefix() + v; }); return; } }
+    }
+    // unassign: <key>
+    else if (cmd === 'unassign') {
+      if (parts.length === 2) { const p = parts[1]; const opts = [...Object.keys(keyBindings), 'all']; const m = opts.filter(k => k.toLowerCase().startsWith(p.toLowerCase()) && k.toLowerCase() !== p.toLowerCase()).map(k => ({label:k,value:k})); if (m.length > 0 && m.length <= 12) { buildACItems(m, v => { conInput.value = prefix() + v; }); return; } }
+    }
+    // captcha: <type>
+    else if (cmd === 'captcha') {
+      if (parts.length === 2) { const p = parts[1]; const opts = ['grid','odd','rotate','slide','checkbox']; const m = opts.filter(o => o.startsWith(p) && o !== p).map(o => ({label:o,value:o})); if (m.length > 0) { buildACItems(m, v => { conInput.value = prefix() + v; }); return; } }
+    }
+    // where: <tile>
+    else if (cmd === 'where') {
+      if (parts.length === 2) { const m = acBlocks(parts[1]); if (m.length > 0 && m.length <= 12) { buildACItems(m, v => { conInput.value = prefix() + v; }); return; } }
+    }
+    // if: compound conditions with grid/console/level/and
+    else if (cmd === 'if') {
+      if (parts.length === 2) { const p = parts[1]; const opts = ['console','level','grid','list','clear','remove']; const m = opts.filter(o => o.startsWith(p) && o !== p).map(o => ({label:o,value:o})); if (m.length > 0) { buildACItems(m, v => { conInput.value = prefix() + v + ' '; }); return; } }
+      if (parts.length === 3 && parts[1] === 'remove') { const p = parts[2]; const m = conIfRules.map((r, i) => ({label: i + ': ' + describeIfRule(r), value: '' + i})).filter(o => o.value.startsWith(p)); if (m.length > 0 && m.length <= 12) { buildACItems(m, v => { conInput.value = prefix() + v; }); return; } }
+      // Walk completed tokens to determine what the user is currently typing
+      const toks = parts.slice(1);
+      const completing = toks[toks.length - 1]; // current incomplete token
+      const done = toks.slice(0, -1); // fully typed tokens
+      let expect = 'cond_type';
+      for (let di = 0; di < done.length; di++) {
+        const tok = done[di];
+        if (expect === 'cond_type') { if (tok === 'console') expect = 'console_word'; else if (tok === 'level') expect = 'level_num'; else if (tok === 'grid') expect = 'grid_x'; else { expect = 'command'; break; } }
+        else if (expect === 'console_word') { expect = 'and_or_cmd'; }
+        else if (expect === 'level_num') { expect = 'and_or_cmd'; }
+        else if (expect === 'grid_x') { expect = 'grid_y'; }
+        else if (expect === 'grid_y') { expect = 'grid_state'; }
+        else if (expect === 'grid_state') { expect = 'and_or_cmd'; }
+        else if (expect === 'and_or_cmd') { if (tok === 'and') expect = 'cond_type'; else { expect = 'command'; break; } }
+        else break;
+      }
+      const p = completing;
+      if (expect === 'cond_type') {
+        const opts = ['console','level','grid']; const m = opts.filter(o => o.startsWith(p) && o !== p).map(o => ({label:o,value:o})); if (m.length > 0) { buildACItems(m, v => { conInput.value = prefix() + v + ' '; }); return; }
+      } else if (expect === 'grid_state') {
+        const states = ['lit','unlit','open','closed','water','dry','wall','empty','player']; const m = states.filter(s => s.startsWith(p) && s !== p).map(s => ({label:s,value:s})); if (m.length > 0) { buildACItems(m, v => { conInput.value = prefix() + v + ' '; }); return; }
+      } else if (expect === 'and_or_cmd') {
+        const opts = ['and', ...CONSOLE_CMDS]; const m = opts.filter(o => o.startsWith(p) && o !== p).map(o => ({label:o,value:o})); if (m.length > 0) { buildACItems(m.slice(0, 12), v => { conInput.value = prefix() + v + ' '; }); return; }
+      } else if (expect === 'command') {
+        const m = CONSOLE_CMDS.filter(c => c.startsWith(p) && c !== p).map(c => ({label:c,value:c})); if (m.length > 0) { buildACItems(m.slice(0, 12), v => { conInput.value = prefix() + v; }); return; }
+      }
+    }
+    hideAC();
+    return;
+  }
+
+  const matches = CONSOLE_CMDS.filter(c => c.startsWith(val) && c !== val);
+  showAC(matches);
+}
+
+function acApply() {
+  const items = conAC.querySelectorAll('div');
+  if (items.length === 0) return false;
+  if (acIndex < 0) acIndex = 0;
+  const item = items[acIndex];
+  // If item has an onclick handler from buildACItems, just click it
+  item.click();
+  return true;
+}
+
+function execCommand(raw) {
+  const trimmed = raw.trim();
+  if (!trimmed) return;
+  conHistory.unshift(trimmed);
+  conPrint('> ' + trimmed);
+
+  const lower = trimmed.toLowerCase();
+  const parts = trimmed.split(/\s+/);
+  const cmd = parts[0].toLowerCase();
+
+  // help
+  if (cmd === 'help') {
+    conPrint('--- Commands ---', 'info');
+    conPrint('setpos <x> <y> <block>  - Set tile at position', 'info');
+    conPrint('tp <x> <y>              - Teleport player', 'info');
+    conPrint('inspect <x> <y>         - Show tile info', 'info');
+    conPrint('fill <x1> <y1> <x2> <y2> <block> - Fill area', 'info');
+    conPrint('swap <x1> <y1> <x2> <y2> - Swap two tiles', 'info');
+    conPrint('shoot                   - Fire a bullet', 'info');
+    conPrint('ball_of_fire            - Fire a fireball', 'info');
+    conPrint('/impossible             - Remove all torches', 'info');
+    conPrint('noclip                  - Toggle wall clipping', 'info');
+    conPrint('god                     - Toggle infinite fire', 'info');
+    conPrint('explode                 - Destroy nearby breakables', 'info');
+    conPrint('light                   - Light nearest torch', 'info');
+    conPrint('dark                    - Unlight all torches', 'info');
+    conPrint('mirror                  - Flip map horizontally', 'info');
+    conPrint('rain                    - Fire rain from above', 'info');
+    conPrint('disco                   - Toggle rainbow floor', 'info');
+    conPrint('drunk                   - Toggle drunk movement', 'info');
+    conPrint('paintball               - Toggle paint trail', 'info');
+    conPrint('size <small/normal/big/huge> - Change tile size', 'info');
+    conPrint('time                    - Show move/fire stats', 'info');
+    conPrint('rename <text>           - Rename the level header', 'info');
+    conPrint('skip                    - Skip to next level', 'info');
+    conPrint('goto <n>                - Jump to level n', 'info');
+    conPrint('count                   - Count remaining torches', 'info');
+    conPrint('progress                - Show pack completion', 'info');
+    conPrint('undo                    - Undo last move', 'info');
+    conPrint('connections             - Show level wiring', 'info');
+    conPrint('state [get/edit] [key]   - View/modify game state', 'info');
+    conPrint('assign <key> <command>  - Bind key to command', 'info');
+    conPrint('unassign <key|all>     - Remove key binding', 'info');
+    conPrint('props <x> <y>           - Show tile properties/wiring', 'info');
+    conPrint('trigger <x> <y>         - Fire connections from tile', 'info');
+    conPrint('where <tile>            - Find all instances of a tile', 'info');
+    conPrint('tiles                   - List all tile names/IDs', 'info');
+    conPrint('highlight               - Toggle connection overlay', 'info');
+    conPrint('give_up                 - Accept defeat', 'info');
+    conPrint('reset                   - Restart current level', 'info');
+    conPrint('clear                   - Clear console log', 'info');
+    conPrint('dragamon                - Battle a wild Torch!', 'info');
+    conPrint('captcha                 - Prove you are not a robot', 'info');
+    conPrint('news [text]             - Read The Dragon Times', 'info');
+    conPrint('if <cond> [and <cond>...] <cmd> - Conditional trigger', 'info');
+    conPrint('  Conditions: console <word>, level <n>, grid <x> <y> <state>', 'info');
+    conPrint('  Grid states: lit, unlit, open, closed, water, dry, wall, empty, player', 'info');
+    conPrint('if list/clear/remove    - Manage if-rules', 'info');
+    conPrint('force_exit              - Force return to level select', 'info');
+    conPrint('mute                    - Toggle sound on/off', 'info');
+    conPrint('volume <0-100>          - Set volume level', 'info');
+    conPrint('Hint: there may be a secret command...', 'info');
+    return;
+  }
+
+  // clear
+  if (cmd === 'clear') {
+    conLog.innerHTML = '';
+    return;
+  }
+
+  if (cmd === 'echo') {
+    conPrint(parts.slice(1).join(' '));
+    return;
+  }
+
+  // skip - go to next level
+  if (cmd === 'skip') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    if (currentLevel >= activeLevels.length - 1) { conPrint('Already on the last level', 'err'); return; }
+    markCheat();
+    currentLevel++;
+    loadLevel(currentLevel);
+    conPrint('Skipped to level ' + (currentLevel + 1), 'ok');
+    return;
+  }
+
+  // goto - jump to specific level
+  if (cmd === 'goto') {
+    const n = parseInt(parts[1]);
+    if (isNaN(n)) { conPrint('Usage: goto <level_number>', 'err'); return; }
+    if (n < 1 || n > activeLevels.length) { conPrint('Level must be 1-' + activeLevels.length, 'err'); return; }
+    markCheat();
+    currentLevel = n - 1;
+    loadLevel(currentLevel);
+    conPrint('Jumped to level ' + n, 'ok');
+    return;
+  }
+
+  // count - count remaining torches
+  if (cmd === 'count') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    let torches = 0, toggles = 0, total = 0;
+    for (let r = 0; r < gameRows; r++)
+      for (let c = 0; c < gameCols; c++) {
+        const o = map[r][c][2];
+        if (o === TORCH_OFF) torches++;
+        else if (o === TOGGLE_OFF) toggles++;
+      }
+    total = torches + toggles;
+    if (total === 0) conPrint('All torches are lit!', 'ok');
+    else {
+      if (torches > 0) conPrint('Unlit torches: ' + torches, 'info');
+      if (toggles > 0) conPrint('Unlit toggles: ' + toggles, 'info');
+      conPrint('Total remaining: ' + total, 'info');
+    }
+    return;
+  }
+
+  // progress - show completion stats
+  if (cmd === 'progress') {
+    const prog = getProgress();
+    const total = activeLevels.length;
+    let completed = 0, cheatedCount = 0, drunkCount = 0;
+    for (let i = 0; i < total; i++) {
+      if (isLevelCompleted(i)) completed++;
+      else if (isCheatedCompleted(i)) cheatedCount++;
+      if (isDrunkCompleted(i)) drunkCount++;
+    }
+    conPrint('--- ' + (packName || 'Campaign') + ' ---', 'info');
+    conPrint('Completed: ' + completed + ' / ' + total, completed === total ? 'ok' : 'info');
+    if (cheatedCount > 0) conPrint('Cheated: ' + cheatedCount, 'info');
+    if (drunkCount > 0) conPrint('Drunk: ' + drunkCount, 'info');
+    conPrint('Current: level ' + (currentLevel + 1), 'info');
+    return;
+  }
+
+  // undo - revert last move
+  if (cmd === 'undo') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    if (!undoState) { conPrint('Nothing to undo', 'err'); return; }
+    map = undoState.map;
+    player.x = undoState.px; player.y = undoState.py;
+    facing.x = undoState.fx; facing.y = undoState.fy;
+    fireUsed = undoState.fireUsed;
+    pressedPlates = undoState.plates;
+    beltCargo = undoState.cargo;
+    fireParticles = [];
+    pendingEffects = [];
+    visualOverrides = [];
+    undoState = null;
+    conPrint('Move undone', 'ok');
+    return;
+  }
+
+  // connections - show level wiring
+  if (cmd === 'connections') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const lvl = activeLevels[currentLevel];
+    const conns = lvl.connections || [];
+    if (conns.length === 0) { conPrint('No connections in this level', 'info'); return; }
+    conPrint('--- Connections (' + conns.length + ') ---', 'info');
+    const nameOf = id => Object.keys(TILE_NAMES).find(k => TILE_NAMES[k] === id) || 'empty';
+    conns.forEach((cn, i) => {
+      const fromCell = map[cn.from[1]][cn.from[0]];
+      const toCell = map[cn.to[1]][cn.to[0]];
+      const fromName = nameOf(fromCell[0] || fromCell[1] || fromCell[2]);
+      const toName = nameOf(toCell[0] || toCell[1] || toCell[2]);
+      conPrint((i+1) + '. ' + fromName + ' (' + cn.from[0] + ',' + cn.from[1] + ') -> ' + toName + ' (' + cn.to[0] + ',' + cn.to[1] + ')', 'info');
+    });
+    return;
+  }
+
+  // state [get/edit]
+  if (cmd === 'state') {
+    if (gameState !== 'playing' && gameState !== 'dying' && gameState !== 'death') { conPrint('Must be in a level', 'err'); return; }
+    const sub = (parts[1] || 'get').toLowerCase();
+    const stateVars = {
+      player_x: { get: () => player.x, set: v => { player.x = v; } },
+      player_y: { get: () => player.y, set: v => { player.y = v; } },
+      facing_x: { get: () => facing.x, set: v => { facing.x = v; } },
+      facing_y: { get: () => facing.y, set: v => { facing.y = v; } },
+      fire_used: { get: () => fireUsed, set: v => { fireUsed = v; } },
+      max_fire: { get: () => maxFire, set: v => { maxFire = v; } },
+      noclip: { get: () => noclipOn, set: v => { noclipOn = !!v; } },
+      god: { get: () => godMode, set: v => { godMode = !!v; } },
+      cheated: { get: () => cheated, set: v => { cheated = !!v; } },
+      disco: { get: () => discoMode, set: v => { discoMode = !!v; } },
+      drunk: { get: () => drunkMode, set: v => { drunkMode = !!v; } },
+      highlight: { get: () => highlightConns, set: v => { highlightConns = !!v; } },
+      win_timer: { get: () => winTimer, set: v => { winTimer = v; } },
+      death_timer: { get: () => deathTimer, set: v => { deathTimer = v; } },
+      game_state: { get: () => gameState, set: v => { setState(v); } },
+      level: { get: () => currentLevel, set: v => { currentLevel = v; loadLevel(v); } },
+      cols: { get: () => gameCols },
+      rows: { get: () => gameRows },
+      particles: { get: () => fireParticles.length },
+      pending: { get: () => pendingEffects.length },
+      overrides: { get: () => visualOverrides.length },
+      plates: { get: () => pressedPlates.size },
+      connections: { get: () => levelConnections.length },
+    };
+    if (sub === 'edit') {
+      const key = (parts[2] || '').toLowerCase();
+      const val = parts[3];
+      if (!key || val === undefined) { conPrint('Usage: state edit <key> <value>', 'err'); conPrint('Keys: ' + Object.keys(stateVars).filter(k => stateVars[k].set).join(', '), 'info'); return; }
+      if (!stateVars[key]) { conPrint('Unknown key: ' + key + '. Available: ' + Object.keys(stateVars).filter(k => stateVars[k].set).join(', '), 'err'); return; }
+      if (!stateVars[key].set) { conPrint(key + ' is read-only', 'err'); return; }
+      let parsed = val;
+      if (val === 'true') parsed = true;
+      else if (val === 'false') parsed = false;
+      else if (!isNaN(Number(val))) parsed = Number(val);
+      markCheat();
+      stateVars[key].set(parsed);
+      conPrint(key + ' = ' + stateVars[key].get(), 'ok');
+      return;
+    }
+    if (sub === 'get') {
+      const key = (parts[2] || '').toLowerCase();
+      if (key) {
+        if (!stateVars[key]) { conPrint('Unknown key: ' + key, 'err'); return; }
+        conPrint(key + ' = ' + stateVars[key].get(), 'info');
+        return;
+      }
+    }
+    // Default: dump all
+    conPrint('--- State ---', 'info');
+    Object.keys(stateVars).forEach(k => {
+      conPrint('  ' + k + ' = ' + stateVars[k].get(), 'info');
+    });
+    return;
+  }
+
+  // assign - bind a key to a command
+  if (cmd === 'assign') {
+    const rawKey = parts[1];
+    const command = parts.slice(2).join(' ');
+    if (!rawKey) { conPrint('Usage: assign <key> <command>', 'err'); conPrint('  assign F1 count', 'info'); conPrint('  assign KeyQ state get fire_used', 'info'); conPrint('Active bindings:', 'info'); const bk = Object.keys(keyBindings); if (bk.length === 0) conPrint('  none', 'info'); else bk.forEach(k => conPrint('  ' + k + ' -> ' + keyBindings[k], 'info')); return; }
+    const key = normalizeKeyCode(rawKey);
+    if (!command) {
+      if (keyBindings[key]) { delete keyBindings[key]; conPrint('Unbound ' + key, 'ok'); }
+      else conPrint('No binding for ' + key, 'err');
+      return;
+    }
+    keyBindings[key] = command;
+    conPrint('Bound ' + key + ' -> ' + command, 'ok');
+    return;
+  }
+  if (cmd === 'unassign') {
+    const rawKey = parts[1];
+    if (!rawKey) {
+      const bk = Object.keys(keyBindings);
+      if (bk.length === 0) { conPrint('No active bindings', 'info'); }
+      else { conPrint('Active bindings:', 'info'); bk.forEach(k => conPrint('  ' + k + ' -> ' + keyBindings[k], 'info')); conPrint('Use: unassign <key> or unassign all', 'info'); }
+      return;
+    }
+    if (rawKey === 'all') { const c = Object.keys(keyBindings).length; keyBindings = {}; conPrint('Cleared ' + c + ' binding(s)', 'ok'); return; }
+    const key = normalizeKeyCode(rawKey);
+    if (keyBindings[key]) { delete keyBindings[key]; conPrint('Unbound ' + key, 'ok'); }
+    else conPrint('No binding for ' + key, 'err');
+    return;
+  }
+
+  // props - show tile properties and connections
+  if (cmd === 'props') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const x = parseInt(parts[1]), y = parseInt(parts[2]);
+    if (isNaN(x) || isNaN(y)) { conPrint('Usage: props <x> <y>', 'err'); return; }
+    if (x < 0 || x >= gameCols || y < 0 || y >= gameRows) { conPrint('Out of bounds', 'err'); return; }
+    const cell = map[y][x];
+    const nameOf = id => Object.keys(TILE_NAMES).find(k => TILE_NAMES[k] === id) || 'empty';
+    conPrint('--- Tile (' + x + ',' + y + ') ---', 'info');
+    conPrint('Layers: [' + cell.join(', ') + '] = [' + nameOf(cell[0]) + ', ' + nameOf(cell[1]) + ', ' + nameOf(cell[2]) + ', ' + nameOf(cell[3]) + ', ' + nameOf(cell[4]) + ']', 'info');
+    const props = levelCellProps[x + ',' + y];
+    if (props) {
+      conPrint('Props: ' + JSON.stringify(props), 'info');
+    } else {
+      conPrint('Props: none', 'info');
+    }
+    const from = levelConnections.filter(c => c.from[0] === x && c.from[1] === y);
+    const to = levelConnections.filter(c => c.to[0] === x && c.to[1] === y);
+    if (from.length > 0) {
+      from.forEach(c => conPrint('  OUT -> (' + c.to[0] + ',' + c.to[1] + ') ' + nameOf(map[c.to[1]][c.to[0]][0] || map[c.to[1]][c.to[0]][1] || map[c.to[1]][c.to[0]][2]), 'ok'));
+    }
+    if (to.length > 0) {
+      to.forEach(c => conPrint('  IN <- (' + c.from[0] + ',' + c.from[1] + ') ' + nameOf(map[c.from[1]][c.from[0]][0] || map[c.from[1]][c.from[0]][1] || map[c.from[1]][c.from[0]][2]), 'ok'));
+    }
+    if (from.length === 0 && to.length === 0) conPrint('No connections', 'info');
+    if (pressedPlates.has(x + ',' + y)) conPrint('Plate is PRESSED', 'ok');
+    if (beltCargo[x + ',' + y]) conPrint('Has belt cargo: ICE', 'ok');
+    return;
+  }
+
+  // trigger - manually fire connections from a tile
+  if (cmd === 'trigger') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const x = parseInt(parts[1]), y = parseInt(parts[2]);
+    const mode = (parts[3] || 'on').toLowerCase();
+    if (isNaN(x) || isNaN(y)) { conPrint('Usage: trigger <x> <y> [on/off]', 'err'); return; }
+    if (x < 0 || x >= gameCols || y < 0 || y >= gameRows) { conPrint('Out of bounds', 'err'); return; }
+    const conns = getConnectionsFrom(x, y);
+    if (conns.length === 0) { conPrint('No outgoing connections from (' + x + ',' + y + ')', 'err'); return; }
+    markCheat();
+    const type = mode === 'off' ? 'toggle_off' : 'toggle_on';
+    applyConnectionImmediate(x, y, type, 0);
+    conPrint('Triggered ' + conns.length + ' connection(s) from (' + x + ',' + y + ') with ' + type, 'ok');
+    return;
+  }
+
+  // where - find all instances of a tile
+  if (cmd === 'where') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const arg = (parts[1] || '').toLowerCase();
+    if (!arg) { conPrint('Usage: where <tile_name_or_id>', 'err'); return; }
+    let id = parseInt(arg);
+    if (isNaN(id)) {
+      if (TILE_NAMES[arg] !== undefined) id = TILE_NAMES[arg];
+      else { conPrint('Unknown tile: ' + arg, 'err'); return; }
+    }
+    const nameOf = tid => Object.keys(TILE_NAMES).find(k => TILE_NAMES[k] === tid) || 'id:' + tid;
+    const found = [];
+    for (let r = 0; r < gameRows; r++)
+      for (let c = 0; c < gameCols; c++)
+        if (map[r][c][0] === id || map[r][c][1] === id || map[r][c][2] === id || map[r][c][3] === id || map[r][c][4] === id)
+          found.push('(' + c + ',' + r + ')');
+    if (found.length === 0) conPrint('No ' + nameOf(id) + ' tiles found', 'info');
+    else conPrint(nameOf(id) + ' (' + found.length + '): ' + found.join(' '), 'ok');
+    return;
+  }
+
+  // tiles - list all tile names and IDs
+  if (cmd === 'tiles') {
+    conPrint('--- Tile Reference ---', 'info');
+    conPrint('Ground(0): empty(0) water(10) ice(4) water_dry(17) belt_up(18) belt_right(19) belt_down(20) belt_left(21) plate(22) spike(33)', 'info');
+    conPrint('Struct(1): wall(1) push_block(9) mirror_ne(5) mirror_nw(6) grate(8) gate_open(13) gate_closed(14) cracked(23)', 'info');
+    conPrint('Object(2): torch_off(2) torch_on(3) toggle_off(11) toggle_on(12) lever_off(15) lever_on(16) eye_off(24) eye_on(25)', 'info');
+    conPrint('Deco(3): skull(26) bones(27) cobweb(28) mushroom(29) gear(30) pipe(31) crate(32)', 'info');
+    return;
+  }
+
+  // highlight - toggle connection overlay
+  if (cmd === 'highlight') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    highlightConns = !highlightConns;
+    conPrint('Connection highlight ' + (highlightConns ? 'ON' : 'OFF'), highlightConns ? 'ok' : 'info');
+    return;
+  }
+
+  // give_up
+  if (cmd === 'give_up') {
+    if (gameState === 'playing') {
+      conPrint('The dragon gives up...', 'err');
+      toggleConsole();
+      killPlayer();
+    } else {
+      conPrint('The dragon gives up... on life.', 'err');
+      toggleConsole();
+      setGameState('death');
+    }
+    return;
+  }
+
+  // reset
+  if (cmd === 'reset') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    loadLevel(currentLevel);
+    conPrint('Level restarted', 'ok');
+    return;
+  }
+
+  // time
+  if (cmd === 'time') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    conPrint('Fire used: ' + fireUsed + (maxFire > 0 ? ' / ' + maxFire : ' (unlimited)'), 'info');
+    conPrint('Player pos: (' + player.x + ', ' + player.y + ')', 'info');
+    conPrint('Facing: (' + facing.x + ', ' + facing.y + ')', 'info');
+    conPrint('Level: ' + (currentLevel + 1) + ' / ' + activeLevels.length, 'info');
+    conPrint('Grid: ' + gameCols + 'x' + gameRows, 'info');
+    return;
+  }
+
+  // rename
+  if (cmd === 'rename') {
+    const newName = parts.slice(1).join(' ');
+    if (!newName) { conPrint('Usage: rename <text>', 'err'); return; }
+    document.getElementById('level').textContent = newName;
+    conPrint('Renamed to: ' + newName, 'ok');
+    return;
+  }
+
+  // inspect x y
+  if (cmd === 'inspect') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const x = parseInt(parts[1]), y = parseInt(parts[2]);
+    if (isNaN(x) || isNaN(y)) { conPrint('Usage: inspect <x> <y>', 'err'); return; }
+    if (x < 0 || x >= gameCols || y < 0 || y >= gameRows) { conPrint('Out of bounds', 'err'); return; }
+    const cell = map[y][x];
+    const nameOf = id => Object.keys(TILE_NAMES).find(k => TILE_NAMES[k] === id) || 'empty';
+    conPrint('(' + x + ',' + y + ') ground=' + nameOf(cell[0]) + '(' + cell[0] + ') struct=' + nameOf(cell[1]) + '(' + cell[1] + ') obj=' + nameOf(cell[2]) + '(' + cell[2] + ')' + (cell[3] ? ' deco=' + nameOf(cell[3]) + '(' + cell[3] + ')' : '') + (cell[4] ? ' deco2=' + nameOf(cell[4]) + '(' + cell[4] + ')' : ''), 'info');
+    return;
+  }
+
+  // setpos x y blockid/name
+  if (cmd === 'setpos') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const x = parseInt(parts[1]);
+    const y = parseInt(parts[2]);
+    const blockArg = (parts[3] || '').toLowerCase();
+    if (isNaN(x) || isNaN(y) || !blockArg) { conPrint('Usage: setpos <x> <y> <block>', 'err'); return; }
+    if (x < 0 || x >= gameCols || y < 0 || y >= gameRows) { conPrint('Out of bounds (0-' + (gameCols-1) + ', 0-' + (gameRows-1) + ')', 'err'); return; }
+    let id = parseInt(blockArg);
+    if (isNaN(id)) {
+      if (TILE_NAMES[blockArg] !== undefined) id = TILE_NAMES[blockArg];
+      else { conPrint('Unknown block: ' + blockArg, 'err'); return; }
+    }
+    if (id < 0 || id > 33) { conPrint('Block ID must be 0-33', 'err'); return; }
+    const layer = TILE_LAYERS_MAP[id];
+    if (layer === -1) map[y][x] = [0, 0, 0, 0, 0];
+    else map[y][x][layer] = id;
+    markCheat();
+    conPrint('Set (' + x + ',' + y + ') layer ' + layer + ' = ' + id, 'ok');
+    return;
+  }
+
+  // fill x1 y1 x2 y2 block
+  if (cmd === 'fill') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const x1 = parseInt(parts[1]), y1 = parseInt(parts[2]);
+    const x2 = parseInt(parts[3]), y2 = parseInt(parts[4]);
+    const blockArg = (parts[5] || '').toLowerCase();
+    if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2) || !blockArg) {
+      conPrint('Usage: fill <x1> <y1> <x2> <y2> <block>', 'err'); return;
+    }
+    let id = parseInt(blockArg);
+    if (isNaN(id)) {
+      if (TILE_NAMES[blockArg] !== undefined) id = TILE_NAMES[blockArg];
+      else { conPrint('Unknown block: ' + blockArg, 'err'); return; }
+    }
+    if (id < 0 || id > 33) { conPrint('Block ID must be 0-33', 'err'); return; }
+    const minX = Math.max(0, Math.min(x1, x2)), maxX = Math.min(gameCols-1, Math.max(x1, x2));
+    const minY = Math.max(0, Math.min(y1, y2)), maxY = Math.min(gameRows-1, Math.max(y1, y2));
+    const layer = TILE_LAYERS_MAP[id];
+    let count = 0;
+    for (let r = minY; r <= maxY; r++)
+      for (let c = minX; c <= maxX; c++) {
+        if (layer === -1) map[r][c] = [0, 0, 0, 0, 0];
+        else map[r][c][layer] = id;
+        count++;
+      }
+    markCheat();
+    conPrint('Filled ' + count + ' tiles with ' + blockArg, 'ok');
+    return;
+  }
+
+  // tp x y
+  if (cmd === 'tp') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const x = parseInt(parts[1]), y = parseInt(parts[2]);
+    if (isNaN(x) || isNaN(y)) { conPrint('Usage: tp <x> <y>', 'err'); return; }
+    if (x < 0 || x >= gameCols || y < 0 || y >= gameRows) { conPrint('Out of bounds', 'err'); return; }
+    player.x = x; player.y = y;
+    markCheat();
+    updatePlates();
+    conPrint('Teleported to (' + x + ',' + y + ')', 'ok');
+    return;
+  }
+
+  // noclip
+  if (cmd === 'noclip') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    noclipOn = !noclipOn;
+    if (noclipOn) markCheat();
+    conPrint('Noclip ' + (noclipOn ? 'ON - walk through walls' : 'OFF'), noclipOn ? 'ok' : 'info');
+    return;
+  }
+
+  // god
+  if (cmd === 'god') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    godMode = !godMode;
+    if (godMode) markCheat();
+    conPrint('God mode ' + (godMode ? 'ON - infinite fire' : 'OFF'), godMode ? 'ok' : 'info');
+    return;
+  }
+
+  // /impossible
+  if (cmd === '/impossible') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    let count = 0;
+    for (let r = 0; r < gameRows; r++)
+      for (let c = 0; c < gameCols; c++) {
+        if (map[r][c][2] === TORCH_OFF || map[r][c][2] === TORCH_ON) {
+          map[r][c][2] = 0; count++;
+        }
+      }
+    markCheat();
+    conPrint('Removed ' + count + ' torch(es). Level is now impossible!', 'info');
+    return;
+  }
+
+  // shoot
+  if (cmd === 'shoot') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    markCheat();
+    const steps = getFireSteps(player.x, player.y, facing.x, facing.y);
+    const DPT = 3;
+    steps.forEach((s, i) => {
+      const delay = i * DPT;
+      applyFireEffects(s, delay);
+      for (let p = 0; p < 2; p++) {
+        fireParticles.push({
+          x: s.x * TILE + TILE/2 + (Math.random()-0.5)*4,
+          y: s.y * TILE + TILE/2 + (Math.random()-0.5)*4,
+          vx: s.fdx * 1.5 + (Math.random()-0.5)*0.5,
+          vy: s.fdy * 1.5 + (Math.random()-0.5)*0.5,
+          life: 12 + i*2, maxLife: 12 + i*2, delay,
+          bullet: true, bdx: s.fdx, bdy: s.fdy
+        });
+      }
+    });
+    conPrint('Bang!', 'ok');
+    return;
+  }
+
+  // ball_of_fire
+  if (cmd === 'ball_of_fire') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    markCheat();
+    const steps = getFireSteps(player.x, player.y, facing.x, facing.y);
+    const DPT = 3;
+    steps.forEach((s, i) => {
+      const delay = i * DPT;
+      applyFireEffects(s, delay);
+      for (let p = 0; p < 4; p++) {
+        fireParticles.push({
+          x: s.x * TILE + TILE/2 + (Math.random()-0.5)*10,
+          y: s.y * TILE + TILE/2 + (Math.random()-0.5)*10,
+          vx: (Math.random()-0.5)*2,
+          vy: (Math.random()-0.5)*2 - 1,
+          life: 30 + i*3, maxLife: 30 + i*3, delay
+        });
+      }
+    });
+    conPrint('Fireball!', 'ok');
+    return;
+  }
+
+  // secret win
+  if (lower === 'supercalifragilisticexpialawin') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    markCheat();
+    for (let r = 0; r < gameRows; r++)
+      for (let c = 0; c < gameCols; c++) {
+        if (map[r][c][2] === TORCH_OFF) map[r][c][2] = TORCH_ON;
+        if (map[r][c][2] === TOGGLE_OFF) map[r][c][2] = TOGGLE_ON;
+      }
+    conPrint('A spoonful of sugar helps the torches light up!', 'ok');
+    toggleConsole();
+    return;
+  }
+
+  // dragamon
+  if (cmd === 'dragamon') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    toggleConsole();
+    startDragamon();
+    return;
+  }
+  // captcha
+  if (cmd === 'captcha') {
+    const sub = (parts[1] || '').toLowerCase();
+    const ft = sub ? CAPTCHA_TYPES[sub] : undefined;
+    if (sub && ft === undefined) { conPrint('Unknown type: ' + sub + '. Options: grid, odd, rotate, slide, checkbox', 'err'); return; }
+    toggleConsole();
+    startCaptcha(ft);
+    return;
+  }
+
+  // if - conditional triggers
+  if (cmd === 'if') {
+    if (parts.length === 2 && parts[1] === 'list') {
+      if (conIfRules.length === 0) { conPrint('No if-rules set.'); return; }
+      conIfRunning = true;
+      conIfRules.forEach((r, i) => conPrint('  ' + i + ': if ' + describeIfRule(r) + ' -> ' + r.cmd));
+      conIfRunning = false;
+      return;
+    }
+    if (parts.length === 2 && parts[1] === 'clear') {
+      conIfRules.length = 0;
+      conPrint('All if-rules cleared.', 'ok');
+      return;
+    }
+    if (parts[1] === 'remove') {
+      const idx = parseInt(parts[2]);
+      if (isNaN(idx) || idx < 0 || idx >= conIfRules.length) { conPrint('Invalid index. Use "if list" to see rules.', 'err'); return; }
+      const removed = conIfRules.splice(idx, 1)[0];
+      conIfRunning = true;
+      conPrint('Removed: if ' + describeIfRule(removed) + ' -> ' + removed.cmd, 'ok');
+      conIfRunning = false;
+      return;
+    }
+    // Parse compound conditions: if <cond> [and <cond> ...] <command>
+    const tokens = parts.slice(1);
+    const conds = [];
+    let ti = 0;
+    while (ti < tokens.length) {
+      if (ti > 0) { if (tokens[ti] === 'and') ti++; else break; }
+      if (tokens[ti] === 'console' && ti + 1 < tokens.length) {
+        conds.push({ type: 'console', text: tokens[ti + 1] }); ti += 2;
+      } else if (tokens[ti] === 'level' && ti + 1 < tokens.length) {
+        const n = parseInt(tokens[ti + 1]);
+        if (isNaN(n) || n < 1) { conPrint('Level must be a number >= 1', 'err'); return; }
+        conds.push({ type: 'level', level: n }); ti += 2;
+      } else if (tokens[ti] === 'grid' && ti + 3 < tokens.length) {
+        const gx = parseInt(tokens[ti + 1]), gy = parseInt(tokens[ti + 2]), gs = tokens[ti + 3];
+        if (isNaN(gx) || isNaN(gy)) { conPrint('Grid coords must be numbers', 'err'); return; }
+        const validStates = ['lit','unlit','open','closed','water','dry','wall','empty','player'];
+        if (!validStates.includes(gs)) { conPrint('Grid state must be: ' + validStates.join(', '), 'err'); return; }
+        conds.push({ type: 'grid', x: gx, y: gy, state: gs }); ti += 4;
+      } else break;
+    }
+    const runCmd = tokens.slice(ti).join(' ');
+    if (conds.length === 0 || !runCmd) {
+      conPrint('Usage: if <cond> [and <cond> ...] <command>', 'err');
+      conPrint('  Conditions: console <word>, level <n>, grid <x> <y> <state>', 'err');
+      conPrint('  Grid states: lit, unlit, open, closed, water, dry, wall, empty, player', 'err');
+      conPrint('  if list / if clear / if remove <n>', 'err');
+      return;
+    }
+    const rule = { conditions: conds, cmd: runCmd, wasMet: false };
+    conIfRules.push(rule);
+    conIfRunning = true;
+    conPrint('Rule added: if ' + describeIfRule(rule) + ' -> ' + runCmd, 'ok');
+    conIfRunning = false;
+    return;
+  }
+
+  // news
+  if (cmd === 'news') {
+    const text = parts.slice(1).join(' ');
+    toggleConsole();
+    showNewspaper(text || null);
+    return;
+  }
+
+  // explode - destroy breakable stuff in radius around player
+  if (cmd === 'explode') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    markCheat();
+    let count = 0;
+    const rad = 3;
+    for (let r = Math.max(0, player.y - rad); r <= Math.min(gameRows-1, player.y + rad); r++) {
+      for (let c = Math.max(0, player.x - rad); c <= Math.min(gameCols-1, player.x + rad); c++) {
+        const cell = map[r][c];
+        if (cell[0] === ICE) { cell[0] = 0; count++; }
+        if (cell[1] === CRACKED) { cell[1] = 0; count++; }
+        if (cell[1] === PUSH_BLOCK) { cell[1] = 0; count++; }
+        // Explosion particles
+        for (let p = 0; p < 2; p++) {
+          fireParticles.push({
+            x: c * TILE + TILE/2 + (Math.random()-0.5)*20,
+            y: r * TILE + TILE/2 + (Math.random()-0.5)*20,
+            vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4 - 2,
+            life: 20 + Math.random()*15, maxLife: 35, delay: 0
+          });
+        }
+      }
+    }
+    conPrint('BOOM! Destroyed ' + count + ' tiles in radius ' + rad, 'ok');
+    return;
+  }
+
+  // light - light the nearest unlit torch
+  if (cmd === 'light') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    let best = null, bestDist = Infinity;
+    for (let r = 0; r < gameRows; r++)
+      for (let c = 0; c < gameCols; c++) {
+        if (map[r][c][2] === TORCH_OFF || map[r][c][2] === TOGGLE_OFF) {
+          const d = Math.abs(c - player.x) + Math.abs(r - player.y);
+          if (d < bestDist) { bestDist = d; best = { x: c, y: r }; }
+        }
+      }
+    if (!best) { conPrint('No unlit torches found', 'info'); return; }
+    markCheat();
+    const cell = map[best.y][best.x];
+    if (cell[2] === TORCH_OFF) cell[2] = TORCH_ON;
+    else if (cell[2] === TOGGLE_OFF) cell[2] = TOGGLE_ON;
+    conPrint('Lit torch at (' + best.x + ',' + best.y + ')', 'ok');
+    return;
+  }
+
+  // dark - unlight all torches
+  if (cmd === 'dark') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    markCheat();
+    let count = 0;
+    for (let r = 0; r < gameRows; r++)
+      for (let c = 0; c < gameCols; c++) {
+        if (map[r][c][2] === TORCH_ON) { map[r][c][2] = TORCH_OFF; count++; }
+        if (map[r][c][2] === TOGGLE_ON) { map[r][c][2] = TOGGLE_OFF; count++; }
+      }
+    conPrint('Darkness falls... ' + count + ' torches extinguished', 'ok');
+    return;
+  }
+
+  // swap x1 y1 x2 y2
+  if (cmd === 'swap') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    const x1 = parseInt(parts[1]), y1 = parseInt(parts[2]);
+    const x2 = parseInt(parts[3]), y2 = parseInt(parts[4]);
+    if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) { conPrint('Usage: swap <x1> <y1> <x2> <y2>', 'err'); return; }
+    if (x1 < 0 || x1 >= gameCols || y1 < 0 || y1 >= gameRows || x2 < 0 || x2 >= gameCols || y2 < 0 || y2 >= gameRows) {
+      conPrint('Out of bounds', 'err'); return;
+    }
+    markCheat();
+    const tmp = [...map[y1][x1]];
+    map[y1][x1] = [...map[y2][x2]];
+    map[y2][x2] = tmp;
+    conPrint('Swapped (' + x1 + ',' + y1 + ') <-> (' + x2 + ',' + y2 + ')', 'ok');
+    return;
+  }
+
+  // disco - toggle rainbow floor
+  if (cmd === 'disco') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    discoMode = !discoMode;
+    conPrint('Disco mode ' + (discoMode ? 'ON' : 'OFF'), discoMode ? 'ok' : 'info');
+    return;
+  }
+
+  // drunk - randomize movement
+  if (cmd === 'drunk') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    drunkMode = !drunkMode;
+    conPrint('Drunk mode ' + (drunkMode ? 'ON - controls randomized each move!' : 'OFF'), drunkMode ? 'ok' : 'info');
+    return;
+  }
+
+  // mirror - flip map horizontally
+  if (cmd === 'mirror') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    markCheat();
+    for (let r = 0; r < gameRows; r++) map[r].reverse();
+    player.x = gameCols - 1 - player.x;
+    facing.x *= -1;
+    conPrint('Map mirrored!', 'ok');
+    return;
+  }
+
+  // paintball - toggle paint trail
+  if (cmd === 'paintball') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    paintMode = !paintMode;
+    if (!paintMode) paintTrail = [];
+    conPrint('Paintball ' + (paintMode ? 'ON - leaving a colorful trail!' : 'OFF - trail cleared'), paintMode ? 'ok' : 'info');
+    return;
+  }
+
+  // rain - fire rains from the sky
+  if (cmd === 'rain') {
+    if (gameState !== 'playing') { conPrint('Must be in a level', 'err'); return; }
+    markCheat();
+    for (let i = 0; i < 60; i++) {
+      const rx = Math.random() * canvas.width;
+      fireParticles.push({
+        x: rx, y: -Math.random() * 40,
+        vx: (Math.random()-0.5)*1.5, vy: Math.random()*3 + 2,
+        life: 50 + Math.random()*30, maxLife: 80,
+        delay: Math.floor(Math.random() * 20)
+      });
+    }
+    // Rain also lights random torches
+    const torches = [];
+    for (let r = 0; r < gameRows; r++)
+      for (let c = 0; c < gameCols; c++)
+        if (map[r][c][2] === TORCH_OFF) torches.push({ x: c, y: r });
+    if (torches.length > 0) {
+      const t = torches[Math.floor(Math.random() * torches.length)];
+      map[t.y][t.x][2] = TORCH_ON;
+      conPrint('Fire rain! A torch at (' + t.x + ',' + t.y + ') was lit!', 'ok');
+    } else {
+      conPrint('Fire rain!', 'ok');
+    }
+    return;
+  }
+
+  // size - change tile zoom
+  if (cmd === 'size') {
+    const arg = (parts[1] || '').toLowerCase();
+    const sizes = { small: 32, normal: 48, big: 64, huge: 80 };
+    if (!sizes[arg]) { conPrint('Usage: size <small/normal/big/huge>', 'err'); return; }
+    // We can't change TILE (const), but we can suggest a restart... actually let's just hack it
+    conPrint('Tile size set to ' + arg + ' (' + sizes[arg] + 'px). Reload to apply.', 'info');
+    // Store in sessionStorage for next reload
+    sessionStorage.setItem('dragonTileSize', sizes[arg]);
+    return;
+  }
+
+  // pretend_you_didint_see_that - clear all borders
+  if (cmd === 'pretend_you_didint_see_that') {
+    cheated = false;
+    drunkMode = false;
+    drunkAllMoves = false;
+    // Clear saved completion for current level
+    const prog = getProgress();
+    if (packName) {
+      if (prog.custom && prog.custom[packName]) delete prog.custom[packName][currentLevel];
+      if (prog.customCheated && prog.customCheated[packName]) delete prog.customCheated[packName][currentLevel];
+      if (prog.customDrunk && prog.customDrunk[packName]) delete prog.customDrunk[packName][currentLevel];
+    } else {
+      if (prog.campaign) delete prog.campaign[currentLevel];
+      if (prog.campaignCheated) delete prog.campaignCheated[currentLevel];
+      if (prog.campaignDrunk) delete prog.campaignDrunk[currentLevel];
+    }
+    localStorage.setItem('dragonPuzzleProgress', JSON.stringify(prog));
+    conPrint('...what border? I don\'t know what you\'re talking about.', 'ok');
+    return;
+  }
+
+  if (cmd === 'force_exit') {
+    if (captchaActive) {
+      captchaActive = false;
+      document.getElementById('captcha-overlay').classList.remove('active');
+    }
+    if (consoleOpen) toggleConsole();
+    if (newsActive) {
+      newsActive = false;
+      document.getElementById('news-overlay').classList.remove('active');
+    }
+    if (dialogueActive) {
+      dialogueActive = false;
+      document.getElementById('dialogue-overlay').classList.remove('active');
+    }
+    showLevelSelect();
+    conPrint('Force exited to level select.', 'ok');
+    return;
+  }
+
+  if (cmd === 'mute') {
+    SFX.setEnabled(!SFX.enabled);
+    conPrint('Sound ' + (SFX.enabled ? 'ON' : 'OFF'), 'ok');
+    return;
+  }
+
+  if (cmd === 'volume') {
+    if (args.length === 0) {
+      conPrint('Volume: ' + Math.round(SFX.volume * 100) + '%', 'info');
+      return;
+    }
+    const v = parseInt(args[0]);
+    if (isNaN(v) || v < 0 || v > 100) { conPrint('Usage: volume <0-100>', 'err'); return; }
+    SFX.setVolume(v / 100);
+    conPrint('Volume set to ' + v + '%', 'ok');
+    return;
+  }
+
+  conPrint('Unknown command: ' + cmd, 'err');
+}
+
+// Helper: get fire path steps (extracted from spawnFire logic)
+// Helper: trace fire path with immediate effects (same logic as spawnFire path tracing)
+function getFireSteps(sx, sy, dx, dy) {
+  const steps = [];
+  let cx = sx + dx, cy = sy + dy;
+  let fdx = dx, fdy = dy;
+  const FIRE_DELAY_PER_TILE = 3;
+  for (let i = 0; i < 1000; i++) {
+    if (cx < 0 || cx >= gameCols || cy < 0 || cy >= gameRows) break;
+    const cell = map[cy][cx];
+    const g = cell[0], s = cell[1], o = cell[2];
+    const delay = steps.length * FIRE_DELAY_PER_TILE;
+    if (s === WALL || s === PUSH_BLOCK || s === GATE_CLOSED || s === DOOR_CLOSED) break;
+    if (s === CRACKED) {
+      steps.push({x:cx,y:cy,efx:['crack'],fdx,fdy});
+      visualOverrides.push({x:cx,y:cy,layer:1,value:CRACKED,delay});
+      cell[1] = 0; SFX.play('crack');
+      break;
+    }
+    if (s === MIRROR_NE) { steps.push({x:cx,y:cy,efx:[],fdx,fdy}); SFX.play('mirror'); const nd=-fdy; fdy=-fdx; fdx=nd; cx+=fdx; cy+=fdy; continue; }
+    if (s === MIRROR_NW) { steps.push({x:cx,y:cy,efx:[],fdx,fdy}); SFX.play('mirror'); const nd=fdy; fdy=fdx; fdx=nd; cx+=fdx; cy+=fdy; continue; }
+    const efx = [];
+    let stop = false;
+    const ck = cx+','+cy;
+    if (g === ICE) { efx.push('ice'); stop = true; visualOverrides.push({x:cx,y:cy,layer:0,value:ICE,delay}); cell[0] = 0; SFX.play('ice'); }
+    else if (beltCargo[ck] === ICE) { efx.push('ice'); stop = true; delete beltCargo[ck]; SFX.play('ice'); }
+    else if (g === WATER) { efx.push('steam'); stop = true; SFX.play('steam'); }
+    if (o === TORCH_OFF) { efx.push('torch'); visualOverrides.push({x:cx,y:cy,layer:2,value:TORCH_OFF,delay}); cell[2] = TORCH_ON; SFX.play('torch'); }
+    else if (o === TOGGLE_OFF) { efx.push('toggle_on'); visualOverrides.push({x:cx,y:cy,layer:2,value:TOGGLE_OFF,delay}); cell[2] = TOGGLE_ON; applyConnectionImmediate(cx,cy,'toggle_on',delay); SFX.play('toggle'); }
+    else if (o === TOGGLE_ON) { efx.push('toggle_off'); visualOverrides.push({x:cx,y:cy,layer:2,value:TOGGLE_ON,delay}); cell[2] = TOGGLE_OFF; applyConnectionImmediate(cx,cy,'toggle_off',delay); SFX.play('toggle'); }
+    else if (o === LEVER_OFF) { efx.push('lever_on'); visualOverrides.push({x:cx,y:cy,layer:2,value:LEVER_OFF,delay}); cell[2] = LEVER_ON; applyConnectionImmediate(cx,cy,'toggle_on',delay); SFX.play('toggle'); }
+    else if (o === LEVER_ON) { efx.push('lever_off'); visualOverrides.push({x:cx,y:cy,layer:2,value:LEVER_ON,delay}); cell[2] = LEVER_OFF; applyConnectionImmediate(cx,cy,'toggle_off',delay); SFX.play('toggle'); }
+    steps.push({x:cx,y:cy,efx,fdx,fdy});
+    if (stop) break;
+    cx += fdx; cy += fdy;
+  }
+  return steps;
+}
+
+// Helper: spawn visual particles for fire steps (steam only — map effects already applied)
+function applyFireEffects(s, delay) {
+  if (s.efx.includes('steam')) {
+    for (let sp=0;sp<10;sp++) fireParticles.push({
+      x:s.x*TILE+TILE/2+(Math.random()-.5)*16, y:s.y*TILE+TILE/2+(Math.random()-.5)*10,
+      vx:(Math.random()-.5)*2, vy:-Math.random()*2.5-1,
+      life:35, maxLife:35, delay, steam:true
+    });
+  }
+}
+
+// Layer map for setpos
+const TILE_LAYERS_MAP = {0:-1, 10:0, 4:0, 17:0, 18:0, 19:0, 20:0, 21:0, 22:0, 33:0, 1:1, 9:1, 5:1, 6:1, 8:1, 13:1, 14:1, 23:1, 2:2, 3:2, 11:2, 12:2, 15:2, 16:2, 24:2, 25:2, 26:3, 27:3, 28:3, 29:3, 30:3, 31:3, 32:3};
+
+// Console input handlers
+conInput.addEventListener('keydown', e => {
+  if (e.code === 'Backquote') { e.preventDefault(); toggleConsole(); return; }
+  if (e.code === 'Escape') { e.preventDefault(); toggleConsole(); return; }
+  if (e.code === 'Enter') {
+    e.preventDefault();
+    hideAC();
+    execCommand(conInput.value);
+    conInput.value = '';
+    conHistIdx = -1;
+    return;
+  }
+  if (e.code === 'Tab') {
+    e.preventDefault();
+    if (conAC.style.display === 'block') acApply();
+    return;
+  }
+  if (e.code === 'ArrowUp') {
+    e.preventDefault();
+    if (conAC.style.display === 'block') {
+      const items = conAC.querySelectorAll('div');
+      acIndex = Math.max(0, acIndex - 1);
+      items.forEach((d,i) => d.classList.toggle('selected', i === acIndex));
+    } else if (conHistory.length > 0) {
+      conHistIdx = Math.min(conHistIdx + 1, conHistory.length - 1);
+      conInput.value = conHistory[conHistIdx];
+    }
+    return;
+  }
+  if (e.code === 'ArrowDown') {
+    e.preventDefault();
+    if (conAC.style.display === 'block') {
+      const items = conAC.querySelectorAll('div');
+      acIndex = Math.min(items.length - 1, acIndex + 1);
+      items.forEach((d,i) => d.classList.toggle('selected', i === acIndex));
+    } else if (conHistIdx > 0) {
+      conHistIdx--;
+      conInput.value = conHistory[conHistIdx];
+    }
+    return;
+  }
+});
+conInput.addEventListener('input', updateAC);
+
+// --- DRAGAMON BATTLE ---
+
+let dragamonActive = false;
+
+function startDragamon() {
+  dragamonActive = true;
+  const overlay = document.getElementById('dragamon-overlay');
+  const msgEl = document.getElementById('dragamon-msg');
+  const actEl = document.getElementById('dragamon-actions');
+  const dCanvas = document.getElementById('dragamon-canvas');
+  const dc = dCanvas.getContext('2d');
+  overlay.classList.add('active');
+
+  let torchHP = 3;
+  let dragonHP = 3;
+  let phase = 'intro'; // intro, choose, playerTurn, enemyTurn, win, lose
+  let animTimer = 0;
+  let shakeX = 0, shakeY = 0;
+  let torchFlicker = 0;
+  let msg = '';
+  let turnQueue = [];
+
+  function setMsg(t) { msg = t; msgEl.textContent = t; }
+  setMsg('A wild Torch appeared!');
+
+  function drawBattle() {
+    if (!dragamonActive) return;
+    dc.clearRect(0, 0, 400, 200);
+
+    // Background - cave
+    dc.fillStyle = '#1a1a2e';
+    dc.fillRect(0, 0, 400, 200);
+    dc.fillStyle = '#222240';
+    dc.fillRect(0, 140, 400, 60);
+
+    // Dragon (left side)
+    const dx = 60 + shakeX, dy = 90 + shakeY;
+    const s = 64;
+    dc.fillStyle = skinColors.body;
+    dc.fillRect(dx - s*.3, dy - s*.25, s*.6, s*.55);
+    dc.fillStyle = skinColors.belly;
+    dc.fillRect(dx - s*.2, dy - s*.1, s*.4, s*.35);
+    dc.fillStyle = skinColors.body;
+    dc.beginPath(); dc.arc(dx + s*.15, dy - s*.2, s*.18, 0, Math.PI*2); dc.fill();
+    dc.fillStyle = skinColors.eyes;
+    dc.beginPath(); dc.arc(dx + s*.2, dy - s*.22, s*.04, 0, Math.PI*2); dc.fill();
+    dc.fillStyle = skinColors.wings;
+    dc.beginPath(); dc.moveTo(dx - s*.2, dy - s*.2); dc.lineTo(dx - s*.35, dy - s*.45); dc.lineTo(dx, dy - s*.05); dc.fill();
+    dc.fillStyle = skinColors.horns;
+    dc.beginPath(); dc.moveTo(dx + s*.1, dy - s*.35); dc.lineTo(dx + s*.12, dy - s*.5); dc.lineTo(dx + s*.2, dy - s*.35); dc.fill();
+
+    // Dragon HP
+    dc.fillStyle = '#444'; dc.fillRect(20, 155, 100, 10);
+    dc.fillStyle = '#4a4'; dc.fillRect(20, 155, (dragonHP / 3) * 100, 10);
+    dc.fillStyle = '#ccc'; dc.font = '10px monospace'; dc.textAlign = 'left';
+    dc.fillText('Dragon HP: ' + dragonHP + '/3', 20, 180);
+
+    // Torch (right side)
+    const tx = 300 + torchFlicker, ty = 80;
+    // Stem
+    dc.fillStyle = '#8b6914';
+    dc.fillRect(tx - 4, ty, 8, 40);
+    // Bowl
+    dc.fillStyle = '#a07818';
+    dc.beginPath();
+    dc.moveTo(tx - 12, ty); dc.lineTo(tx + 12, ty); dc.lineTo(tx + 8, ty + 10); dc.lineTo(tx - 8, ty + 10);
+    dc.fill();
+    // Flame (animated, scales with HP)
+    if (torchHP > 0) {
+      const flameH = 10 + torchHP * 8;
+      const wobble = Math.sin(Date.now() / 80) * 3;
+      dc.fillStyle = '#ff6600';
+      dc.beginPath(); dc.arc(tx + wobble, ty - flameH/2, 8 + torchHP*2, 0, Math.PI*2); dc.fill();
+      dc.fillStyle = '#ffcc00';
+      dc.beginPath(); dc.arc(tx + wobble, ty - flameH/2, 4 + torchHP, 0, Math.PI*2); dc.fill();
+    } else {
+      // Unlit - torch is lit by player, show glow
+      dc.fillStyle = '#ff8800';
+      const wobble = Math.sin(Date.now() / 80) * 4;
+      dc.beginPath(); dc.arc(tx + wobble, ty - 20, 14, 0, Math.PI*2); dc.fill();
+      dc.fillStyle = '#ffdd44';
+      dc.beginPath(); dc.arc(tx + wobble, ty - 20, 8, 0, Math.PI*2); dc.fill();
+    }
+
+    // Torch HP
+    dc.fillStyle = '#444'; dc.fillRect(260, 155, 100, 10);
+    dc.fillStyle = torchHP > 0 ? '#a44' : '#4a4'; dc.fillRect(260, 155, (Math.max(torchHP, 0) / 3) * 100, 10);
+    dc.fillStyle = '#ccc'; dc.textAlign = 'right';
+    dc.fillText('Torch HP: ' + Math.max(torchHP, 0) + '/3', 380, 180);
+
+    // Battle label
+    dc.fillStyle = '#f0e68c'; dc.font = 'bold 14px monospace'; dc.textAlign = 'center';
+    dc.fillText('DRAGAMON BATTLE', 200, 18);
+
+    animTimer++;
+    if (shakeX !== 0 || shakeY !== 0) {
+      shakeX *= -0.6; shakeY *= -0.6;
+      if (Math.abs(shakeX) < 0.5) shakeX = 0;
+      if (Math.abs(shakeY) < 0.5) shakeY = 0;
+    }
+    torchFlicker = Math.sin(Date.now() / 60) * 2;
+
+    requestAnimationFrame(drawBattle);
+  }
+
+  function showActions() {
+    actEl.innerHTML = '';
+    if (phase === 'intro') {
+      const btn = document.createElement('button');
+      btn.className = 'dragamon-btn';
+      btn.textContent = 'Fight!';
+      btn.onclick = () => { phase = 'choose'; showActions(); };
+      actEl.appendChild(btn);
+    } else if (phase === 'choose') {
+      setMsg('What will Dragon do?');
+      const fb = document.createElement('button');
+      fb.className = 'dragamon-btn';
+      fb.textContent = 'Fireball';
+      fb.onclick = () => playerAttack();
+      actEl.appendChild(fb);
+
+      const rb = document.createElement('button');
+      rb.className = 'dragamon-btn';
+      rb.textContent = 'Tackle';
+      rb.onclick = () => { setMsg('Dragon tries to tackle... but it has no effect on a torch!'); setTimeout(() => enemyTurn(), 1500); phase = 'wait'; showActions(); };
+      actEl.appendChild(rb);
+
+      const flb = document.createElement('button');
+      flb.className = 'dragamon-btn';
+      flb.textContent = 'Flee';
+      flb.onclick = () => { setMsg('Can\'t flee from a wild Torch!'); };
+      actEl.appendChild(flb);
+    } else if (phase === 'win') {
+      setMsg('Dragon lit the Torch! You win!');
+      const btn = document.createElement('button');
+      btn.className = 'dragamon-btn';
+      btn.textContent = 'Continue';
+      btn.onclick = endDragamon;
+      actEl.appendChild(btn);
+    } else if (phase === 'lose') {
+      setMsg('Dragon fainted...');
+      const btn = document.createElement('button');
+      btn.className = 'dragamon-btn';
+      btn.textContent = 'Try Again';
+      btn.onclick = () => {
+        torchHP = 3; dragonHP = 3; phase = 'intro';
+        setMsg('A wild Torch appeared!');
+        showActions();
+      };
+      actEl.appendChild(btn);
+    } else {
+      // wait phase - no buttons
+    }
+  }
+
+  function playerAttack() {
+    phase = 'wait';
+    actEl.innerHTML = '';
+    setMsg('Dragon used Fireball!');
+    torchFlicker = 10;
+    setTimeout(() => {
+      torchHP--;
+      if (torchHP <= 0) {
+        phase = 'win';
+        setMsg('The Torch was lit! It\'s super effective!');
+        setTimeout(() => showActions(), 1200);
+      } else {
+        setMsg('The Torch resists! (' + torchHP + ' HP left)');
+        setTimeout(() => enemyTurn(), 1200);
+      }
+    }, 600);
+  }
+
+  function enemyTurn() {
+    phase = 'wait';
+    actEl.innerHTML = '';
+    const attacks = [
+      { name: 'Ember', msg: 'Wild Torch used Ember!' },
+      { name: 'Wax Toss', msg: 'Wild Torch threw hot wax!' },
+      { name: 'Flicker', msg: 'Wild Torch flickered menacingly!' }
+    ];
+    const atk = attacks[Math.floor(Math.random() * attacks.length)];
+    setMsg(atk.msg);
+    setTimeout(() => {
+      if (atk.name === 'Flicker') {
+        setMsg('But nothing happened!');
+      } else {
+        dragonHP--;
+        shakeX = 8; shakeY = 4;
+        setMsg(atk.msg + ' Dragon takes 1 damage!');
+      }
+      if (dragonHP <= 0) {
+        setTimeout(() => { phase = 'lose'; showActions(); }, 1000);
+      } else {
+        setTimeout(() => { phase = 'choose'; showActions(); }, 1200);
+      }
+    }, 800);
+  }
+
+  function endDragamon() {
+    dragamonActive = false;
+    overlay.classList.remove('active');
+    conPrint('Dragamon battle complete!', 'ok');
+  }
+
+  drawBattle();
+  showActions();
+}
+
+// --- CAPTCHA ---
+let captchaActive = false;
+const CAPTCHA_TYPES = {grid:0, odd:1, rotate:2, slide:3, checkbox:4};
+function startCaptcha(forceType) {
+  captchaActive = true;
+  const overlay = document.getElementById('captcha-overlay');
+  const titleEl = document.getElementById('captcha-title');
+  const actEl = document.getElementById('captcha-actions');
+  const cCanvas = document.getElementById('captcha-canvas');
+  const cc = cCanvas.getContext('2d');
+  overlay.classList.add('active');
+  actEl.innerHTML = '';
+
+  const CELL = 80, GRID = 3, PAD = 15;
+  cCanvas.width = GRID * CELL + PAD * 2;
+  cCanvas.height = GRID * CELL + PAD * 2;
+
+  // Mini tile drawers for captcha canvas
+  function cDrawWall(x, y, s) {
+    cc.fillStyle = '#556';
+    cc.fillRect(x+1, y+1, s-2, s-2);
+    cc.strokeStyle = '#334';
+    cc.lineWidth = 1;
+    for (let i = 0; i < 3; i++) { cc.strokeRect(x+4+i*(s/3-2), y+4, s/3-4, s/2-6); cc.strokeRect(x+4+s/6-1+i*(s/3-2), y+s/2, s/3-4, s/2-6); }
+  }
+  function cDrawTorch(x, y, s) {
+    cc.fillStyle = '#1a1a2e';
+    cc.fillRect(x, y, s, s);
+    cc.fillStyle = '#654';
+    cc.fillRect(x+s*.4, y+s*.35, s*.2, s*.45);
+    cc.fillStyle = '#fa3';
+    cc.beginPath(); cc.arc(x+s*.5, y+s*.3, s*.18, 0, Math.PI*2); cc.fill();
+    cc.fillStyle = '#ff8';
+    cc.beginPath(); cc.arc(x+s*.5, y+s*.28, s*.1, 0, Math.PI*2); cc.fill();
+  }
+  function cDrawWater(x, y, s) {
+    cc.fillStyle = '#26c';
+    cc.fillRect(x+1, y+1, s-2, s-2);
+    cc.strokeStyle = '#48e';
+    cc.lineWidth = 1;
+    for (let i = 0; i < 3; i++) { cc.beginPath(); cc.moveTo(x+4, y+s*.3+i*s*.2); cc.quadraticCurveTo(x+s*.5, y+s*.2+i*s*.2, x+s-4, y+s*.3+i*s*.2); cc.stroke(); }
+  }
+  function cDrawSkull(x, y, s) {
+    cc.fillStyle = '#1a1a2e';
+    cc.fillRect(x, y, s, s);
+    cc.fillStyle = '#bba';
+    cc.beginPath(); cc.arc(x+s*.5, y+s*.38, s*.25, 0, Math.PI*2); cc.fill();
+    cc.fillRect(x+s*.38, y+s*.5, s*.24, s*.2);
+    cc.fillStyle = '#222';
+    cc.beginPath(); cc.arc(x+s*.42, y+s*.36, s*.06, 0, Math.PI*2); cc.fill();
+    cc.beginPath(); cc.arc(x+s*.58, y+s*.36, s*.06, 0, Math.PI*2); cc.fill();
+    cc.fillRect(x+s*.44, y+s*.58, s*.03, s*.06);
+    cc.fillRect(x+s*.5, y+s*.58, s*.03, s*.06);
+  }
+  function cDrawGear(x, y, s) {
+    cc.fillStyle = '#1a1a2e';
+    cc.fillRect(x, y, s, s);
+    const cx = x+s/2, cy = y+s/2;
+    cc.fillStyle = '#555';
+    cc.beginPath();
+    for (let i = 0; i < 12; i++) { const a = (i/12)*Math.PI*2, r = i%2===0 ? s*.4 : s*.3; cc.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r); }
+    cc.closePath(); cc.fill();
+    cc.fillStyle = '#333';
+    cc.beginPath(); cc.arc(cx, cy, s*.1, 0, Math.PI*2); cc.fill();
+  }
+  function cDrawSpike(x, y, s) {
+    cc.fillStyle = '#333';
+    cc.fillRect(x+2, y+2, s-4, s-4);
+    cc.fillStyle = '#888';
+    const cx = x+s/2, cy = y+s/2;
+    const spikes = [[0,-.35],[.25,-.18],[.35,0],[.25,.25],[0,.35],[-.25,.25],[-.35,0],[-.25,-.18]];
+    spikes.forEach(([ox,oy]) => { cc.beginPath(); cc.moveTo(cx+ox*s,cy+oy*s); cc.lineTo(cx+ox*s*.5-oy*s*.08,cy+oy*s*.5+ox*s*.08); cc.lineTo(cx+ox*s*.5+oy*s*.08,cy+oy*s*.5-ox*s*.08); cc.fill(); });
+    cc.fillStyle = '#555';
+    cc.beginPath(); cc.arc(cx, cy, s*.08, 0, Math.PI*2); cc.fill();
+  }
+  function cDrawGrate(x, y, s) {
+    cc.fillStyle = '#1a1a2e';
+    cc.fillRect(x, y, s, s);
+    cc.strokeStyle = '#777';
+    cc.lineWidth = 2;
+    for (let i = 1; i < 4; i++) { cc.beginPath(); cc.moveTo(x+i*s/4, y+2); cc.lineTo(x+i*s/4, y+s-2); cc.stroke(); cc.beginPath(); cc.moveTo(x+2, y+i*s/4); cc.lineTo(x+s-2, y+i*s/4); cc.stroke(); }
+  }
+  function cDrawGate(x, y, s) {
+    cc.fillStyle = '#1a1a2e';
+    cc.fillRect(x, y, s, s);
+    cc.fillStyle = '#825';
+    cc.fillRect(x+s*.1, y+2, s*.25, s-4);
+    cc.fillRect(x+s*.65, y+2, s*.25, s-4);
+    cc.fillStyle = '#a36';
+    cc.beginPath(); cc.arc(x+s*.5, y+s*.15, s*.15, Math.PI, 0); cc.fill();
+    cc.fillRect(x+s*.35, y+s*.15, s*.3, s*.6);
+  }
+  function cDrawIce(x, y, s) {
+    cc.fillStyle = '#9cf';
+    cc.fillRect(x+1, y+1, s-2, s-2);
+    cc.strokeStyle = '#fff';
+    cc.lineWidth = 1;
+    cc.globalAlpha = 0.5;
+    cc.beginPath(); cc.moveTo(x+s*.2,y+s*.3); cc.lineTo(x+s*.5,y+s*.2); cc.lineTo(x+s*.8,y+s*.35); cc.stroke();
+    cc.beginPath(); cc.moveTo(x+s*.15,y+s*.65); cc.lineTo(x+s*.55,y+s*.55); cc.lineTo(x+s*.85,y+s*.7); cc.stroke();
+    cc.globalAlpha = 1;
+  }
+  function cDrawDragon(x, y, s) {
+    cc.fillStyle = '#1a1a2e';
+    cc.fillRect(x, y, s, s);
+    const cx = x+s*.5, cy = y+s*.55;
+    cc.fillStyle = skinColors.body;
+    cc.fillRect(cx-s*.25, cy-s*.2, s*.5, s*.4);
+    cc.fillStyle = skinColors.belly;
+    cc.fillRect(cx-s*.15, cy-s*.05, s*.3, s*.25);
+    cc.fillStyle = skinColors.body;
+    cc.beginPath(); cc.arc(cx+s*.08, cy-s*.18, s*.14, 0, Math.PI*2); cc.fill();
+    cc.fillStyle = skinColors.eyes;
+    cc.beginPath(); cc.arc(cx+s*.12, cy-s*.2, s*.03, 0, Math.PI*2); cc.fill();
+    cc.fillStyle = skinColors.wings;
+    cc.beginPath(); cc.moveTo(cx-s*.2,cy-s*.15); cc.lineTo(cx-s*.35,cy-s*.35); cc.lineTo(cx,cy); cc.fill();
+    cc.fillStyle = skinColors.horns;
+    cc.beginPath(); cc.moveTo(cx+s*.04,cy-s*.3); cc.lineTo(cx+s*.06,cy-s*.42); cc.lineTo(cx+s*.14,cy-s*.3); cc.fill();
+  }
+
+  const TILE_DRAWERS = [
+    { name: 'walls', draw: cDrawWall },
+    { name: 'torches', draw: cDrawTorch },
+    { name: 'water', draw: cDrawWater },
+    { name: 'skulls', draw: cDrawSkull },
+    { name: 'gears', draw: cDrawGear },
+    { name: 'spikes', draw: cDrawSpike },
+    { name: 'grates', draw: cDrawGrate },
+    { name: 'gates', draw: cDrawGate },
+    { name: 'ice', draw: cDrawIce },
+  ];
+
+  function makeBtn(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'captcha-btn';
+    b.textContent = label;
+    b.onclick = onClick;
+    actEl.appendChild(b);
+    return b;
+  }
+
+  function endCaptcha(passed) {
+    captchaActive = false;
+    overlay.classList.remove('active');
+    cCanvas.removeEventListener('click', canvasClick);
+    if (canvasWheel) { cCanvas.removeEventListener('wheel', canvasWheel); canvasWheel = null; }
+    if (canvasMD) { cCanvas.removeEventListener('mousedown', canvasMD); canvasMD = null; }
+    if (canvasMM) { document.removeEventListener('mousemove', canvasMM); canvasMM = null; }
+    if (canvasMU) { document.removeEventListener('mouseup', canvasMU); canvasMU = null; }
+    if (passed) conPrint('CAPTCHA verified - you are not a robot!', 'ok');
+    else conPrint('CAPTCHA failed!', 'err');
+  }
+
+  let canvasClick = () => {};
+  let canvasWheel = null;
+  let canvasMD = null, canvasMM = null, canvasMU = null;
+
+  const type = forceType !== undefined ? forceType : Math.floor(Math.random() * 5);
+
+  if (type === 0) {
+    // --- IMAGE GRID SELECTION ---
+    const targetIdx = Math.floor(Math.random() * TILE_DRAWERS.length);
+    const target = TILE_DRAWERS[targetIdx];
+    titleEl.textContent = 'Select all squares with ' + target.name;
+    const grid = [];
+    // Place 2-4 target tiles randomly
+    const count = 2 + Math.floor(Math.random() * 3);
+    const positions = [];
+    while (positions.length < count) {
+      const p = Math.floor(Math.random() * 9);
+      if (!positions.includes(p)) positions.push(p);
+    }
+    for (let i = 0; i < 9; i++) {
+      if (positions.includes(i)) {
+        grid.push({ drawer: target, isTarget: true });
+      } else {
+        let ri;
+        do { ri = Math.floor(Math.random() * TILE_DRAWERS.length); } while (ri === targetIdx);
+        grid.push({ drawer: TILE_DRAWERS[ri], isTarget: false });
+      }
+    }
+    const selected = new Set();
+
+    function drawGrid() {
+      cc.fillStyle = '#111';
+      cc.fillRect(0, 0, cCanvas.width, cCanvas.height);
+      for (let i = 0; i < 9; i++) {
+        const gx = i % 3, gy = Math.floor(i / 3);
+        const x = PAD + gx * CELL, y = PAD + gy * CELL;
+        grid[i].drawer.draw(x, y, CELL);
+        cc.strokeStyle = '#444';
+        cc.lineWidth = 1;
+        cc.strokeRect(x, y, CELL, CELL);
+        if (selected.has(i)) {
+          cc.strokeStyle = '#4f4';
+          cc.lineWidth = 3;
+          cc.strokeRect(x+2, y+2, CELL-4, CELL-4);
+        }
+      }
+    }
+    drawGrid();
+
+    canvasClick = (e) => {
+      const rect = cCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const gx = Math.floor((mx - PAD) / CELL), gy = Math.floor((my - PAD) / CELL);
+      if (gx < 0 || gx >= 3 || gy < 0 || gy >= 3) return;
+      const idx = gy * 3 + gx;
+      if (selected.has(idx)) selected.delete(idx); else selected.add(idx);
+      drawGrid();
+    };
+    cCanvas.addEventListener('click', canvasClick);
+
+    makeBtn('Verify', () => {
+      let correct = true;
+      for (let i = 0; i < 9; i++) {
+        if (grid[i].isTarget !== selected.has(i)) { correct = false; break; }
+      }
+      endCaptcha(correct);
+    });
+    makeBtn('Close', () => endCaptcha(false));
+
+  } else if (type === 1) {
+    // --- ODD ONE OUT ---
+    titleEl.textContent = 'Click the tile that doesn\'t belong';
+    const mainIdx = Math.floor(Math.random() * TILE_DRAWERS.length);
+    let oddIdx;
+    do { oddIdx = Math.floor(Math.random() * TILE_DRAWERS.length); } while (oddIdx === mainIdx);
+    const oddPos = Math.floor(Math.random() * 9);
+    const grid = [];
+    for (let i = 0; i < 9; i++) {
+      grid.push(i === oddPos ? TILE_DRAWERS[oddIdx] : TILE_DRAWERS[mainIdx]);
+    }
+
+    function drawGrid() {
+      cc.fillStyle = '#111';
+      cc.fillRect(0, 0, cCanvas.width, cCanvas.height);
+      for (let i = 0; i < 9; i++) {
+        const gx = i % 3, gy = Math.floor(i / 3);
+        const x = PAD + gx * CELL, y = PAD + gy * CELL;
+        grid[i].draw(x, y, CELL);
+        cc.strokeStyle = '#444';
+        cc.lineWidth = 1;
+        cc.strokeRect(x, y, CELL, CELL);
+      }
+    }
+    drawGrid();
+
+    canvasClick = (e) => {
+      const rect = cCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const gx = Math.floor((mx - PAD) / CELL), gy = Math.floor((my - PAD) / CELL);
+      if (gx < 0 || gx >= 3 || gy < 0 || gy >= 3) return;
+      const idx = gy * 3 + gx;
+      endCaptcha(idx === oddPos);
+    };
+    cCanvas.addEventListener('click', canvasClick);
+    makeBtn('Close', () => endCaptcha(false));
+
+  } else if (type === 2) {
+    // --- ROTATION ---
+    titleEl.textContent = 'Rotate the image until it is upright';
+    const target = TILE_DRAWERS[Math.floor(Math.random() * TILE_DRAWERS.length)];
+    const rotations = [90, 180, 270];
+    let currentRot = rotations[Math.floor(Math.random() * rotations.length)];
+
+    function drawRot() {
+      cc.fillStyle = '#111';
+      cc.fillRect(0, 0, cCanvas.width, cCanvas.height);
+      cc.save();
+      cc.translate(cCanvas.width/2, cCanvas.height/2);
+      cc.rotate(currentRot * Math.PI / 180);
+      const s = 160;
+      target.draw(-s/2, -s/2, s);
+      cc.restore();
+      cc.fillStyle = '#888';
+      cc.font = '14px monospace';
+      cc.textAlign = 'center';
+      cc.fillText(target.name, cCanvas.width/2, cCanvas.height - 8);
+    }
+    drawRot();
+
+    makeBtn('Rotate Left', () => { currentRot = (currentRot - 90 + 360) % 360; drawRot(); });
+    makeBtn('Rotate Right', () => { currentRot = (currentRot + 90) % 360; drawRot(); });
+    makeBtn('Submit', () => endCaptcha(currentRot === 0));
+    makeBtn('Close', () => endCaptcha(false));
+
+  } else if (type === 3) {
+    // --- SLIDER PUZZLE ---
+    titleEl.textContent = 'Slide tiles to match the goal (one tile is hidden)';
+    const REF = 40;
+    cCanvas.width = GRID * CELL + PAD * 3 + GRID * REF;
+    cCanvas.height = GRID * CELL + PAD * 2;
+    // Use dragon as the image, split into 3x3
+    const tiles = [0,1,2,3,4,5,6,7,8]; // 8 = empty
+    // Shuffle with valid moves
+    let emptyIdx = 8;
+    for (let i = 0; i < 80; i++) {
+      const neighbors = [];
+      const ex = emptyIdx % 3, ey = Math.floor(emptyIdx / 3);
+      if (ex > 0) neighbors.push(emptyIdx - 1);
+      if (ex < 2) neighbors.push(emptyIdx + 1);
+      if (ey > 0) neighbors.push(emptyIdx - 3);
+      if (ey < 2) neighbors.push(emptyIdx + 3);
+      const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
+      tiles[emptyIdx] = tiles[pick];
+      tiles[pick] = 8;
+      emptyIdx = pick;
+    }
+
+    // Pre-render full image: draw tiles on captcha canvas then copy to offscreen
+    const imgCanvas = document.createElement('canvas');
+    imgCanvas.width = GRID * CELL; imgCanvas.height = GRID * CELL;
+    const ic = imgCanvas.getContext('2d');
+    const cdraw = [cDrawDragon, cDrawTorch, cDrawWall, cDrawWater, cDrawSkull, cDrawGear, cDrawSpike, cDrawGrate, cDrawIce];
+    cc.fillStyle = '#111'; cc.fillRect(0, 0, cCanvas.width, cCanvas.height);
+    for (let i = 0; i < 9; i++) { cdraw[i](PAD + (i%3)*CELL, PAD + Math.floor(i/3)*CELL, CELL); }
+    ic.drawImage(cCanvas, PAD, PAD, GRID*CELL, GRID*CELL, 0, 0, GRID*CELL, GRID*CELL);
+
+    function drawSlider() {
+      cc.fillStyle = '#111';
+      cc.fillRect(0, 0, cCanvas.width, cCanvas.height);
+      for (let i = 0; i < 9; i++) {
+        const dx = i % 3, dy = Math.floor(i / 3);
+        const t = tiles[i];
+        const px = PAD + dx*CELL, py = PAD + dy*CELL;
+        if (t === 8) {
+          cc.fillStyle = '#222';
+          cc.fillRect(px, py, CELL, CELL);
+          continue;
+        }
+        const sx = t % 3, sy = Math.floor(t / 3);
+        cc.drawImage(imgCanvas, sx*CELL, sy*CELL, CELL, CELL, px, py, CELL, CELL);
+        // Green border if correct position, red tint if wrong
+        if (t === i) {
+          cc.strokeStyle = '#4f4'; cc.lineWidth = 2;
+          cc.strokeRect(px+1, py+1, CELL-2, CELL-2);
+        } else {
+          cc.fillStyle = 'rgba(255,0,0,0.15)';
+          cc.fillRect(px, py, CELL, CELL);
+          cc.strokeStyle = '#844'; cc.lineWidth = 1;
+          cc.strokeRect(px, py, CELL, CELL);
+        }
+      }
+      // Reference image on the right
+      const refX = PAD * 2 + GRID * CELL, refSize = GRID * REF;
+      cc.drawImage(imgCanvas, 0, 0, GRID*CELL, GRID*CELL, refX, PAD, refSize, refSize);
+      cc.strokeStyle = '#666'; cc.lineWidth = 1;
+      cc.strokeRect(refX, PAD, refSize, refSize);
+      for (let gi = 1; gi < GRID; gi++) {
+        cc.beginPath(); cc.moveTo(refX + gi*REF, PAD); cc.lineTo(refX + gi*REF, PAD + refSize); cc.stroke();
+        cc.beginPath(); cc.moveTo(refX, PAD + gi*REF); cc.lineTo(refX + refSize, PAD + gi*REF); cc.stroke();
+      }
+      cc.fillStyle = '#888'; cc.font = '11px monospace'; cc.textAlign = 'center';
+      cc.fillText('GOAL', refX + refSize/2, PAD + refSize + 14);
+      cc.textAlign = 'left';
+    }
+    drawSlider();
+
+    function isSolved() {
+      for (let i = 0; i < 9; i++) { if (tiles[i] !== i) return false; }
+      return true;
+    }
+
+    canvasClick = (e) => {
+      const rect = cCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const gx = Math.floor((mx - PAD) / CELL), gy = Math.floor((my - PAD) / CELL);
+      if (gx < 0 || gx >= 3 || gy < 0 || gy >= 3) return;
+      const idx = gy * 3 + gx;
+      // Check if adjacent to empty
+      const ei = tiles.indexOf(8);
+      const ex = ei%3, ey = Math.floor(ei/3);
+      if ((Math.abs(gx-ex) + Math.abs(gy-ey)) === 1) {
+        tiles[ei] = tiles[idx];
+        tiles[idx] = 8;
+        drawSlider();
+        if (isSolved()) { setTimeout(() => endCaptcha(true), 300); }
+      }
+    };
+    cCanvas.addEventListener('click', canvasClick);
+    makeBtn('Close', () => endCaptcha(false));
+
+  } else if (type === 4) {
+    // --- CHECKBOX ---
+    titleEl.textContent = '';
+    cCanvas.width = 300; cCanvas.height = 80;
+    let checked = false, verifying = false, spinAngle = 0, spinTimer = null;
+    let subPage = null; // null, 'privacy', 'terms'
+    let scrollY = 0;
+    const PRIVACY_LINES = [
+      'Effective date: The Age of Fire',
+      '',
+      'dragonCAPTCHA collects the following:',
+      '- Your fire breath temperature',
+      '- Number of torches judged unfairly',
+      '- How long you stare at walls',
+      '- Your dragon\'s emotional state',
+      '- Tiles pushed in frustration',
+      '- Average time spent confused',
+      '- Whether you talk to the torches',
+      '- Your opinions on spike placement',
+      '- How many times you\'ve rage-quit',
+      '',
+      'DATA SHARING',
+      'This data is sold to the Torch Council',
+      'for undisclosed purposes. We also share',
+      'your information with:',
+      '- The International Skull Consortium',
+      '- The Wall Builders\' Guild',
+      '- A gear that asked nicely',
+      '- Greg from accounting (he\'s lonely)',
+      '',
+      'DATA RETENTION',
+      'Your data is stored in a series of',
+      'enchanted push blocks. We would delete',
+      'it but we forgot which block it\'s in',
+      'and they all look the same.',
+      '',
+      'YOUR RIGHTS',
+      'You have the right to request your data.',
+      'The request will be printed, set on fire',
+      'by our dragon, and the ashes mailed to',
+      'you within 6-8 business years.',
+      '',
+      'COOKIES',
+      'We don\'t use cookies. We use torches.',
+      'They\'re basically the same thing but',
+      'warmer and more likely to set your',
+      'browser history on fire.',
+      '',
+      'CONTACT',
+      'Please direct all complaints to the',
+      'nearest skull. It won\'t respond but it',
+      'is an excellent listener.',
+    ];
+    const TERMS_LINES = [
+      'Last updated: Tomorrow',
+      '',
+      'By clicking the checkbox you agree to:',
+      '',
+      '1. Never impersonate a robot.',
+      '2. Light at least one torch per session.',
+      '3. Accept that skulls are purely',
+      '   decorative and definitely not cursed.',
+      '4. Not hold dragonCAPTCHA liable for',
+      '   any spike-related incidents.',
+      '5. Acknowledge that gears do NOT bite.',
+      '',
+      '6. Solve every captcha with enthusiasm',
+      '   and a positive attitude.',
+      '7. Never question why the walls are',
+      '   watching you. They just do that.',
+      '8. Maintain a fire-to-torch ratio of',
+      '   at least 1:1 at all times.',
+      '9. Agree that push blocks have feelings',
+      '   and should be pushed gently.',
+      '10. Not reverse-engineer the dragon.',
+      '    (We tried. It got angry.)',
+      '',
+      '11. Accept that ice tiles are slippery',
+      '    and that is YOUR problem.',
+      '12. Refrain from stacking more than',
+      '    three skulls at once. It\'s weird.',
+      '13. Acknowledge that the Torch Council',
+      '    is a legitimate governing body.',
+      '14. Not use fire breath indoors without',
+      '    written consent from the Torch',
+      '    Council and two (2) witnesses.',
+      '',
+      '15. Understand that conveyor belts go',
+      '    where conveyor belts want to go.',
+      '16. Not attempt to bribe gates with',
+      '    treasure, compliments, or snacks.',
+      '17. Accept that mirrors exist and are',
+      '    NOT portals. Stop walking into them.',
+      '18. Promise not to sue if a gear looks',
+      '    at you funny. That\'s just its face.',
+      '',
+      'LIMITATION OF LIABILITY',
+      'dragonCAPTCHA is not responsible for',
+      'existential crises caused by being asked',
+      'to prove you are not a robot. If you ARE',
+      'a robot, why did you click the checkbox?',
+      'That was very dishonest of you.',
+      '',
+      'TERMINATION',
+      'Violation of these terms results in',
+      'permanent captcha. Not one captcha. ALL',
+      'captchas. Forever. Even to check your',
+      'email. We have that power somehow and',
+      'we are not afraid to use it.',
+    ];
+
+    function drawCheckbox() {
+      if (subPage) {
+        const w = cCanvas.width, h = cCanvas.height;
+        cc.fillStyle = '#f9f9f9'; cc.fillRect(0, 0, w, h);
+        cc.strokeStyle = '#c1c1c1'; cc.lineWidth = 2; cc.strokeRect(0, 0, w, h);
+        cc.fillStyle = '#333'; cc.font = 'bold 13px monospace'; cc.textAlign = 'left';
+        cc.fillText(subPage === 'privacy' ? 'Privacy Policy' : 'Terms and Conditions', 12, 22);
+        const lines = subPage === 'privacy' ? PRIVACY_LINES : TERMS_LINES;
+        const contentH = lines.length * 14 + (subPage === 'terms' ? 30 : 4);
+        const viewTop = 30, viewBot = h - 26;
+        const viewH = viewBot - viewTop;
+        const maxScroll = Math.max(0, contentH - viewH);
+        scrollY = Math.max(0, Math.min(maxScroll, scrollY));
+        cc.save();
+        cc.beginPath(); cc.rect(2, viewTop, w - 4, viewH); cc.clip();
+        cc.fillStyle = '#555'; cc.font = '10px monospace';
+        lines.forEach((l, i) => cc.fillText(l, 12, viewTop + 12 + i * 14 - scrollY));
+        if (subPage === 'terms') {
+          const btnY = viewTop + 12 + lines.length * 14 + 10 - scrollY;
+          cc.fillStyle = '#47a'; cc.font = 'bold 10px monospace';
+          cc.fillText('[Accept Terms and Conditions]', 12, btnY);
+        }
+        cc.restore();
+        if (maxScroll > 0) {
+          const barH = Math.max(20, viewH * (viewH / contentH));
+          const barY = viewTop + (scrollY / maxScroll) * (viewH - barH);
+          cc.fillStyle = '#ccc';
+          cc.fillRect(w - 8, barY, 4, barH);
+        }
+        cc.fillStyle = '#47a'; cc.font = '11px monospace';
+        cc.fillText('[Back]', 12, h - 10);
+        return;
+      }
+      cc.fillStyle = '#f9f9f9'; cc.fillRect(0, 0, 300, 80);
+      cc.strokeStyle = '#c1c1c1'; cc.lineWidth = 2; cc.strokeRect(0, 0, 300, 80);
+      const bx = 20, by = 22, bs = 28;
+      cc.fillStyle = '#fff'; cc.fillRect(bx, by, bs, bs);
+      cc.strokeStyle = '#aaa'; cc.lineWidth = 2; cc.strokeRect(bx, by, bs, bs);
+      if (verifying) {
+        const cx = bx + bs/2, cy = by + bs/2, r = 10;
+        cc.strokeStyle = '#ddd'; cc.lineWidth = 3;
+        cc.beginPath(); cc.arc(cx, cy, r, 0, Math.PI*2); cc.stroke();
+        cc.strokeStyle = '#4285f4'; cc.lineWidth = 3;
+        cc.beginPath(); cc.arc(cx, cy, r, spinAngle, spinAngle + Math.PI*0.7); cc.stroke();
+      } else if (checked) {
+        cc.strokeStyle = '#34a853'; cc.lineWidth = 4; cc.lineCap = 'round';
+        cc.beginPath();
+        cc.moveTo(bx + 6, by + bs/2);
+        cc.lineTo(bx + bs/2 - 2, by + bs - 7);
+        cc.lineTo(bx + bs - 4, by + 6);
+        cc.stroke(); cc.lineCap = 'butt';
+      }
+      cc.fillStyle = '#333'; cc.font = '15px monospace'; cc.textAlign = 'left';
+      cc.fillText("I'm not a robot", 62, 42);
+      cc.fillStyle = '#555'; cc.font = '9px monospace'; cc.textAlign = 'right';
+      cc.fillText('dragonCAPTCHA', 285, 35);
+      cc.fillStyle = '#47a'; cc.font = '8px monospace';
+      cc.fillText('Privacy', 260, 48);
+      cc.fillText('Terms', 285, 48);
+      cc.fillStyle = '#888';
+      cc.fillText(' - ', 265, 48);
+      cc.textAlign = 'left';
+    }
+    drawCheckbox();
+
+    canvasClick = (e) => {
+      if (dragged) { dragged = false; return; }
+      const rect = cCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      if (subPage) {
+        if (mx >= 8 && mx <= 60 && my >= cCanvas.height - 22) {
+          subPage = null; scrollY = 0;
+          cCanvas.width = 300; cCanvas.height = 80;
+          drawCheckbox();
+        }
+        if (subPage === 'terms') {
+          const btnY = 30 + 12 + TERMS_LINES.length * 14 + 10 - scrollY;
+          if (btnY >= 30 && btnY <= cCanvas.height - 26 && mx >= 8 && mx <= 250 && my >= btnY - 12 && my <= btnY + 4) {
+            subPage = null; scrollY = 0;
+            cCanvas.width = 300; cCanvas.height = 80;
+            checked = true; drawCheckbox();
+            setTimeout(() => endCaptcha(true), 600);
+          }
+        }
+        return;
+      }
+      if (checked || verifying) return;
+      // Privacy link ~(230-262, 40-55)
+      if (mx >= 230 && mx <= 262 && my >= 40 && my <= 55) {
+        subPage = 'privacy'; scrollY = 0;
+        cCanvas.width = 300; cCanvas.height = 350;
+        drawCheckbox();
+        return;
+      }
+      // Terms link ~(268-290, 40-55)
+      if (mx >= 268 && mx <= 290 && my >= 40 && my <= 55) {
+        subPage = 'terms'; scrollY = 0;
+        cCanvas.width = 300; cCanvas.height = 350;
+        drawCheckbox();
+        return;
+      }
+      if (mx >= 10 && mx <= 58 && my >= 15 && my <= 58) {
+        verifying = true;
+        drawCheckbox();
+        const duration = 1500 + Math.random() * 2000;
+        spinTimer = setInterval(() => { spinAngle += 0.15; drawCheckbox(); }, 30);
+        setTimeout(() => {
+          clearInterval(spinTimer);
+          verifying = false;
+          checked = true;
+          drawCheckbox();
+          setTimeout(() => endCaptcha(true), 600);
+        }, duration);
+      }
+    };
+    cCanvas.addEventListener('click', canvasClick);
+    canvasWheel = (e) => { if (!subPage) return; e.preventDefault(); scrollY += e.deltaY > 0 ? 14 : -14; drawCheckbox(); };
+    cCanvas.addEventListener('wheel', canvasWheel, { passive: false });
+    let dragY = null, dragged = false;
+    canvasMD = (e) => { if (!subPage) return; dragY = e.clientY; dragged = false; };
+    canvasMM = (e) => { if (dragY === null) return; const dy = dragY - e.clientY; if (Math.abs(dy) > 2) { scrollY += dy; dragY = e.clientY; dragged = true; drawCheckbox(); } };
+    canvasMU = () => { dragY = null; };
+    cCanvas.addEventListener('mousedown', canvasMD);
+    document.addEventListener('mousemove', canvasMM);
+    document.addEventListener('mouseup', canvasMU);
+    makeBtn('Close', () => { if (spinTimer) clearInterval(spinTimer); endCaptcha(false); });
+  }
+}
+
+// --- DIALOGUE ---
+let dialogueActive = false;
+
+function drawDragonPortrait(pctx, w, h, bodyColor) {
+  const colors = npcColorPalette(bodyColor || '#3a7d44');
+  const s = Math.min(w, h);
+  const cx = w/2, cy = h/2;
+  pctx.clearRect(0, 0, w, h);
+  // Body
+  pctx.fillStyle = colors.body;
+  pctx.fillRect(cx-s*0.3, cy-s*0.1, s*0.6, s*0.55);
+  // Belly
+  pctx.fillStyle = colors.belly;
+  pctx.fillRect(cx-s*0.2, cy+s*0.05, s*0.4, s*0.35);
+  // Head
+  const hx = cx + s*0.2, hy = cy - s*0.15;
+  pctx.fillStyle = colors.body;
+  pctx.beginPath(); pctx.arc(hx, hy, s*0.22, 0, Math.PI*2); pctx.fill();
+  // Eyes
+  pctx.fillStyle = colors.eyes;
+  pctx.beginPath(); pctx.arc(hx+s*0.08, hy-s*0.06, s*0.04, 0, Math.PI*2); pctx.fill();
+  pctx.beginPath(); pctx.arc(hx+s*0.08, hy+s*0.06, s*0.04, 0, Math.PI*2); pctx.fill();
+  // Wings
+  pctx.fillStyle = colors.wings;
+  pctx.beginPath(); pctx.moveTo(cx-s*0.15, cy-s*0.05); pctx.lineTo(cx, cy-s*0.4); pctx.lineTo(cx+s*0.15, cy-s*0.05); pctx.fill();
+  // Tail
+  pctx.strokeStyle = colors.body; pctx.lineWidth = 2;
+  pctx.beginPath(); pctx.moveTo(cx-s*0.3, cy+s*0.2); pctx.quadraticCurveTo(cx-s*0.5, cy+s*0.35, cx-s*0.4, cy+s*0.45); pctx.stroke();
+  // Horns
+  pctx.fillStyle = colors.horns;
+  pctx.beginPath(); pctx.moveTo(hx-s*0.08, hy-s*0.16); pctx.lineTo(hx-s*0.04, hy-s*0.32); pctx.lineTo(hx+s*0.02, hy-s*0.16); pctx.fill();
+  pctx.beginPath(); pctx.moveTo(hx+s*0.04, hy-s*0.16); pctx.lineTo(hx+s*0.1, hy-s*0.32); pctx.lineTo(hx+s*0.14, hy-s*0.16); pctx.fill();
+}
+
+function showDialogue(text, name, bodyColor) {
+  dialogueActive = true;
+  SFX.play('dialogue');
+  const overlay = document.getElementById('dialogue-overlay');
+  overlay.classList.add('active');
+  document.getElementById('dialogue-name').textContent = name || 'Dragon';
+  document.getElementById('dialogue-text').textContent = text;
+  // Draw portrait
+  const pc = document.getElementById('dialogue-portrait');
+  const pctx = pc.getContext('2d');
+  drawDragonPortrait(pctx, 56, 56, bodyColor);
+
+  const dismiss = () => {
+    dialogueActive = false;
+    overlay.classList.remove('active');
+    overlay.removeEventListener('click', dismiss);
+    document.removeEventListener('keydown', keyDismiss);
+  };
+  const keyDismiss = (e) => {
+    if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Escape' || e.code === 'Enter') {
+      e.preventDefault();
+      dismiss();
+    }
+  };
+  overlay.addEventListener('click', dismiss);
+  document.addEventListener('keydown', keyDismiss);
+}
+
+// --- NEWSPAPER ---
+let newsActive = false;
+const NEWS_ARTICLES = [
+  { headline: 'TORCH COUNCIL DEMANDS HIGHER FIRE STANDARDS',
+    body: 'In a unanimous vote, the Torch Council has declared that all dragons must maintain a minimum flame temperature of 400 degrees. "We\'re tired of lukewarm lighting," said Head Torch. "It\'s embarrassing." Local dragons have responded with outrage, claiming the new standards are "unreasonable" and "physically impossible on Tuesdays."' },
+  { headline: 'PUSH BLOCK UNION GOES ON STRIKE',
+    body: 'Push blocks across all levels have ceased movement, demanding better working conditions. "Do you know what it\'s like being shoved around all day?" said Block #47. "No lunch breaks. No holidays. Just push, push, push." Management has offered one unpushed day per month, which the union has rejected as "insulting."' },
+  { headline: 'LOCAL SKULL DENIES BEING CURSED FOR FIFTH TIME THIS WEEK',
+    body: 'A skull in level 3 has once again denied allegations of being cursed, despite glowing red every full moon. "I\'m purely decorative," the skull insisted. "The glowing is a medical condition." Witnesses report hearing whispered threats at night, which the skull attributes to "the wind, probably."' },
+  { headline: 'CONVEYOR BELT MALFUNCTION SENDS DRAGON TO WRONG DUNGEON',
+    body: 'A routine conveyor belt inspection turned chaotic yesterday when a belt reversed direction without warning, launching an unsuspecting dragon into level 12. "I was just trying to get to the torch," said the dragon. "Next thing I know, I\'m in a room full of spikes." The Belt Maintenance Guild has issued an apology and a coupon for one free ride.' },
+  { headline: 'GATE REFUSES TO OPEN, CITES "PERSONAL REASONS"',
+    body: 'A closed gate in the eastern corridor has been unresponsive for three days, ignoring all lever inputs. "I just need some time to myself," the gate reportedly said through the gap. Players have been forced to take a 47-tile detour. The gate\'s therapist declined to comment, but sources say the gate "has been under a lot of pressure lately."' },
+  { headline: 'AREA DRAGON EXPOSED AS ROBOT AFTER FAILING OWN CAPTCHA',
+    body: 'Scandal rocked the dragon community today when a prominent fire-breather was unable to pass a standard dragonCAPTCHA verification. "I just couldn\'t find all the torches," the dragon admitted tearfully. "They all look the same to me." The Torch Council has launched an investigation. The dragon has been placed on administrative leave pending a humanity review.' },
+];
+
+function newsWrapText(ctx, text, maxW) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxW) {
+      if (line) lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function showNewspaper(customText, customSubtitle) {
+  newsActive = true;
+  SFX.play('paper');
+  const overlay = document.getElementById('news-overlay');
+  const nc = document.getElementById('news-canvas');
+  const ctx = nc.getContext('2d');
+  overlay.classList.add('active');
+
+  let headline, body;
+  if (customText) {
+    headline = 'BREAKING NEWS';
+    body = customText;
+  } else {
+    const a = NEWS_ARTICLES[Math.floor(Math.random() * NEWS_ARTICLES.length)];
+    headline = a.headline;
+    body = a.body;
+  }
+
+  const w = nc.width, h = nc.height;
+  // Paper background
+  ctx.fillStyle = '#f5e6c8';
+  ctx.fillRect(0, 0, w, h);
+  // Double border
+  ctx.strokeStyle = '#8b7355';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(3, 3, w - 6, h - 6);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(7, 7, w - 14, h - 14);
+  // Masthead
+  ctx.fillStyle = '#2b1810';
+  ctx.font = 'bold 24px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('THE DRAGON TIMES', w / 2, 40);
+  // Rules
+  ctx.strokeStyle = '#2b1810';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(15, 48); ctx.lineTo(w - 15, 48); ctx.stroke();
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(15, 52); ctx.lineTo(w - 15, 52); ctx.stroke();
+  // Subtitle
+  ctx.font = 'italic 9px Georgia, serif';
+  ctx.fillText(customSubtitle || 'Vol. IV No. 22 \u00B7 The Age of Fire \u00B7 Price: 2 Gold', w / 2, 64);
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(15, 70); ctx.lineTo(w - 15, 70); ctx.stroke();
+  // Headline
+  ctx.font = 'bold 15px Georgia, serif';
+  const headLines = newsWrapText(ctx, headline, w - 40);
+  let y = 90;
+  headLines.forEach(l => { ctx.fillText(l, w / 2, y); y += 18; });
+  // Rule under headline
+  y += 4;
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(w - 30, y); ctx.stroke();
+  y += 16;
+  // Body
+  ctx.font = '12px Georgia, serif';
+  ctx.textAlign = 'left';
+  const bodyLines = newsWrapText(ctx, body, w - 40);
+  bodyLines.forEach(l => { ctx.fillText(l, 20, y); y += 16; });
+
+  document.getElementById('news-close-btn').onclick = () => {
+    newsActive = false;
+    overlay.classList.remove('active');
+  };
+}
+
+// --- BOOT ---
+
+loadLevel(0);
+draw();
+
+// Show appropriate initial screen
+if (isCustomMode) {
+  renderPackBrowser();
+  setState('packbrowser');
+} else {
+  renderLevelSelect();
+  setState('levelselect');
+}
+
+// Generate dragon favicon
+(function(){
+  var s=32,c=document.createElement('canvas'),g=c.getContext('2d');
+  c.width=c.height=s;
+  g.fillStyle='#3a7d44';g.fillRect(s*.2,s*.25,s*.6,s*.55);
+  g.fillStyle='#6abf69';g.fillRect(s*.3,s*.4,s*.4,s*.35);
+  g.fillStyle='#3a7d44';g.beginPath();g.arc(s*.5,s*.4,s*.2,0,Math.PI*2);g.fill();
+  g.fillStyle='#ff4444';
+  g.beginPath();g.arc(s*.42,s*.46,s*.04,0,Math.PI*2);g.fill();
+  g.beginPath();g.arc(s*.58,s*.46,s*.04,0,Math.PI*2);g.fill();
+  g.fillStyle='#6a3d7d';
+  g.beginPath();g.moveTo(s*.15,s*.3);g.lineTo(-s*.05,s*.15);g.lineTo(s*.2,s*.5);g.fill();
+  g.beginPath();g.moveTo(s*.85,s*.3);g.lineTo(s*1.05,s*.15);g.lineTo(s*.8,s*.5);g.fill();
+  g.fillStyle='#c4a35a';
+  g.beginPath();g.moveTo(s*.42,s*.28);g.lineTo(s*.46,s*.15);g.lineTo(s*.52,s*.28);g.fill();
+  g.beginPath();g.moveTo(s*.54,s*.28);g.lineTo(s*.6,s*.15);g.lineTo(s*.64,s*.28);g.fill();
+  var l=document.createElement('link');l.rel='icon';l.href=c.toDataURL();document.head.appendChild(l);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+node_modules/
+dist/
+browser-dist/
+.DS_Store
+*.zip
