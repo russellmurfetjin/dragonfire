@@ -1189,12 +1189,7 @@ function drawEditorTile(ctx, x, y, s, tileId, npcFacingIdx, npcColor, rotation) 
     ctx.fillStyle = '#777'; ctx.fillRect(cx2-s*0.16, y, s*0.32, s*0.08); ctx.fillRect(cx2-s*0.16, y+s*0.92, s*0.32, s*0.08);
   } else if (tileId === FLOOR_TILE) {
     ctx.fillStyle = npcColor || '#888';
-    ctx.fillRect(x+s*0.02, y+s*0.02, s*0.96, s*0.96);
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
-    ctx.strokeRect(x+s*0.02, y+s*0.02, s*0.96, s*0.96);
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    ctx.fillRect(x+s*0.04, y+s*0.04, s*0.92, s*0.04);
-    ctx.fillRect(x+s*0.04, y+s*0.04, s*0.04, s*0.92);
+    ctx.fillRect(x, y, s, s);
   }
   if (_rotated) ctx.restore();
 }
