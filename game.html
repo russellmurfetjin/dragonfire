@@ -267,7 +267,7 @@ const weaponMode = _skinData.weapon === 'gun' ? 'gun' : 'fire';
 
 // Tile types
 const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, EXIT = 7, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42, TRAFFIC_LIGHT = 43, FIRE_HYDRANT = 44, MANHOLE = 45, TRASH_CAN = 46, TRAIN_FRONT = 47, TRAIN_BODY = 48, TRAIN_WINDOW = 49, TRAIN_SEAT = 50, TRAIN_WHEEL = 51, BARREL = 52, SUBWAY_WALL = 53, PLATFORM_EDGE = 54, SUBWAY_SIGN = 55, TURNSTILE = 56, SUBWAY_MAP = 57, SUBWAY_PILLAR = 58, FLOOR_TILE = 59;
-const ROTATABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE, TRAIN_FRONT, TRAIN_BODY, TRAIN_WINDOW, TRAIN_SEAT, TRAIN_WHEEL, PLATFORM_EDGE, SUBWAY_WALL]);
+const FLIPPABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE, TRAIN_FRONT, TRAIN_BODY, TRAIN_WINDOW, TRAIN_SEAT, TRAIN_WHEEL, PLATFORM_EDGE, SUBWAY_WALL]);
 
 // Theme system
 const THEMES = {
@@ -2487,10 +2487,10 @@ function draw() {
       else if (o === EYE_ON) drawEye(c, r, true);
       // Layer 3: deco
       const d = cell[3];
-      let decoRotated = false;
-      if (d && ROTATABLE_DECO.has(d)) {
-        const rot = (levelCellProps[c+','+r] || {}).rotation || 0;
-        if (rot) { decoRotated = true; ctx.save(); ctx.translate(c*TILE+TILE/2, r*TILE+TILE/2); ctx.rotate(rot*Math.PI/2); ctx.translate(-(c*TILE+TILE/2), -(r*TILE+TILE/2)); }
+      let decoFlipped = false;
+      if (d && FLIPPABLE_DECO.has(d)) {
+        const fp = (levelCellProps[c+','+r] || {});
+        if (fp.flipH || fp.flipV) { decoFlipped = true; ctx.save(); ctx.translate(c*TILE+TILE/2, r*TILE+TILE/2); ctx.scale(fp.flipH ? -1 : 1, fp.flipV ? -1 : 1); ctx.translate(-(c*TILE+TILE/2), -(r*TILE+TILE/2)); }
       }
       if (d === SKULL) drawSkull(c, r);
       else if (d === BONES) drawBones(c, r);
@@ -2527,13 +2527,13 @@ function draw() {
       else if (d === SUBWAY_MAP) drawSubwayMap(c, r);
       else if (d === SUBWAY_PILLAR) drawSubwayPillar(c, r);
       else if (d === FLOOR_TILE) { const fp = levelCellProps[c+','+r] || {}; drawFloorTile(c, r, fp.floorTileColor); }
-      if (decoRotated) ctx.restore();
+      if (decoFlipped) ctx.restore();
       // Layer 4: deco2
       const d2 = cell[4];
-      let deco2Rotated = false;
-      if (d2 && ROTATABLE_DECO.has(d2)) {
-        const rot = (levelCellProps[c+','+r] || {}).rotation || 0;
-        if (rot) { deco2Rotated = true; ctx.save(); ctx.translate(c*TILE+TILE/2, r*TILE+TILE/2); ctx.rotate(rot*Math.PI/2); ctx.translate(-(c*TILE+TILE/2), -(r*TILE+TILE/2)); }
+      let deco2Flipped = false;
+      if (d2 && FLIPPABLE_DECO.has(d2)) {
+        const fp = (levelCellProps[c+','+r] || {});
+        if (fp.flipH || fp.flipV) { deco2Flipped = true; ctx.save(); ctx.translate(c*TILE+TILE/2, r*TILE+TILE/2); ctx.scale(fp.flipH ? -1 : 1, fp.flipV ? -1 : 1); ctx.translate(-(c*TILE+TILE/2), -(r*TILE+TILE/2)); }
       }
       if (d2 === SKULL) drawSkull(c, r);
       else if (d2 === BONES) drawBones(c, r);
@@ -2570,7 +2570,7 @@ function draw() {
       else if (d2 === SUBWAY_MAP) drawSubwayMap(c, r);
       else if (d2 === SUBWAY_PILLAR) drawSubwayPillar(c, r);
       else if (d2 === FLOOR_TILE) { const fp = levelCellProps[c+','+r] || {}; drawFloorTile(c, r, fp.floorTileColor); }
-      if (deco2Rotated) ctx.restore();
+      if (deco2Flipped) ctx.restore();
     }
   }
 
