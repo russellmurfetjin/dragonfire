@@ -266,7 +266,7 @@ const skinColors = _skinData.parts ? { ..._skinData.parts } : { ...SKIN_DEFAULT 
 const weaponMode = _skinData.weapon === 'gun' ? 'gun' : 'fire';
 
 // Tile types
-const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, EXIT = 7, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42, TRAFFIC_LIGHT = 43, FIRE_HYDRANT = 44, MANHOLE = 45, TRASH_CAN = 46, TRAIN_FRONT = 47, TRAIN_BODY = 48, TRAIN_WINDOW = 49, TRAIN_SEAT = 50, TRAIN_WHEEL = 51, BARREL = 52, SUBWAY_WALL = 53, PLATFORM_EDGE = 54, SUBWAY_SIGN = 55, TURNSTILE = 56, SUBWAY_MAP = 57, SUBWAY_PILLAR = 58;
+const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, EXIT = 7, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42, TRAFFIC_LIGHT = 43, FIRE_HYDRANT = 44, MANHOLE = 45, TRASH_CAN = 46, TRAIN_FRONT = 47, TRAIN_BODY = 48, TRAIN_WINDOW = 49, TRAIN_SEAT = 50, TRAIN_WHEEL = 51, BARREL = 52, SUBWAY_WALL = 53, PLATFORM_EDGE = 54, SUBWAY_SIGN = 55, TURNSTILE = 56, SUBWAY_MAP = 57, SUBWAY_PILLAR = 58, FLOOR_TILE = 59;
 const ROTATABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE, TRAIN_FRONT, TRAIN_BODY, TRAIN_WINDOW, TRAIN_SEAT, TRAIN_WHEEL, PLATFORM_EDGE, SUBWAY_WALL]);
 
 // Theme system
@@ -287,7 +287,7 @@ function cellToLayers(val) {
   if (val === WATER || val === ICE || val === WATER_DRY || (val >= BELT_UP && val <= BELT_LEFT) || val === PLATE || val === SPIKE) return [val, 0, 0, 0, 0];
   if (val === WALL || val === PUSH_BLOCK || val === MIRROR_NE || val === MIRROR_NW || val === GRATE || val === GATE_OPEN || val === GATE_CLOSED || val === CRACKED || val === DOOR_CLOSED || val === DOOR_OPEN) return [0, val, 0, 0, 0];
   if (val === TORCH_OFF || val === TORCH_ON || val === TOGGLE_OFF || val === TOGGLE_ON || val === LEVER_OFF || val === LEVER_ON || val === EYE_OFF || val === EYE_ON) return [0, 0, val, 0, 0];
-  if ((val >= SKULL && val <= CRATE) || val === PAPER || (val >= RAILWAY && val <= SUBWAY_PILLAR)) return [0, 0, 0, val, 0];
+  if ((val >= SKULL && val <= CRATE) || val === PAPER || (val >= RAILWAY && val <= FLOOR_TILE)) return [0, 0, 0, val, 0];
   return [0, 0, 0, 0, 0];
 }
 
@@ -1415,6 +1415,20 @@ function drawSubwayPillar(gx, gy) {
   ctx.fillRect(x - 8, y + TILE - 4, 16, 4);
 }
 
+function drawFloorTile(gx, gy, color) {
+  const x = gx * TILE, y = gy * TILE;
+  ctx.fillStyle = color || '#888';
+  ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+  // Subtle border
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
+  // Inner highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(x + 2, y + 2, TILE - 4, 2);
+  ctx.fillRect(x + 2, y + 2, 2, TILE - 4);
+}
+
 function drawIce(gx, gy) {
   const x = gx*TILE, y = gy*TILE;
   ctx.fillStyle = '#a0d8ef';
@@ -2520,6 +2534,7 @@ function draw() {
       else if (d === TURNSTILE) drawTurnstile(c, r);
       else if (d === SUBWAY_MAP) drawSubwayMap(c, r);
       else if (d === SUBWAY_PILLAR) drawSubwayPillar(c, r);
+      else if (d === FLOOR_TILE) { const fp = levelCellProps[c+','+r] || {}; drawFloorTile(c, r, fp.floorTileColor); }
       if (decoRotated) ctx.restore();
       // Layer 4: deco2
       const d2 = cell[4];
@@ -2562,6 +2577,7 @@ function draw() {
       else if (d2 === TURNSTILE) drawTurnstile(c, r);
       else if (d2 === SUBWAY_MAP) drawSubwayMap(c, r);
       else if (d2 === SUBWAY_PILLAR) drawSubwayPillar(c, r);
+      else if (d2 === FLOOR_TILE) { const fp = levelCellProps[c+','+r] || {}; drawFloorTile(c, r, fp.floorTileColor); }
       if (deco2Rotated) ctx.restore();
     }
   }

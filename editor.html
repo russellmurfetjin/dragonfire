@@ -202,6 +202,15 @@
   <h3>Tiles</h3>
   <div class="tile-grid" id="tile-palette"></div>
 
+  <div id="floor-tile-picker" style="display:none; padding:4px 0 8px;">
+    <h3 style="margin:4px 0">Floor Tile Color</h3>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="color" id="floor-tile-color" value="#888888" style="width:36px;height:28px;border:1px solid #555;background:#222;cursor:pointer;">
+      <span id="floor-tile-hex" style="color:#aaa;font:12px monospace;">#888888</span>
+      <button id="eyedropper-btn" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:12px monospace;" title="Pick color from canvas">&#128371;</button>
+    </div>
+  </div>
+
   <h3>Layer</h3>
   <div class="btn-row" id="layer-btns">
     <button class="btn btn-layer" onclick="setLayer(0)">Ground</button>
@@ -367,7 +376,7 @@ const PACK_VERSION = 6;
 // v5: 4-layer maps [ground, structure, object, deco]
 
 // Layer assignments for each tile type
-const TILE_LAYERS = { 0:-1, 10:0, 4:0, 17:0, 18:0, 19:0, 20:0, 21:0, 22:0, 33:0, 1:1, 9:1, 5:1, 6:1, 8:1, 13:1, 14:1, 23:1, 35:1, 36:1, 2:2, 3:2, 11:2, 12:2, 15:2, 16:2, 24:2, 25:2, 26:3, 27:3, 28:3, 29:3, 30:3, 31:3, 32:3, 34:3, 37:3, 38:3, 39:3, 40:3, 41:3, 42:3, 43:3, 44:3, 45:3, 46:3, 47:3, 48:3, 49:3, 50:3, 51:3, 52:3, 53:3, 54:3, 55:3, 56:3, 57:3, 58:3 };
+const TILE_LAYERS = { 0:-1, 10:0, 4:0, 17:0, 18:0, 19:0, 20:0, 21:0, 22:0, 33:0, 1:1, 9:1, 5:1, 6:1, 8:1, 13:1, 14:1, 23:1, 35:1, 36:1, 2:2, 3:2, 11:2, 12:2, 15:2, 16:2, 24:2, 25:2, 26:3, 27:3, 28:3, 29:3, 30:3, 31:3, 32:3, 34:3, 37:3, 38:3, 39:3, 40:3, 41:3, 42:3, 43:3, 44:3, 45:3, 46:3, 47:3, 48:3, 49:3, 50:3, 51:3, 52:3, 53:3, 54:3, 55:3, 56:3, 57:3, 58:3, 59:3 };
 // Ground(0): Water, Ice, Belt, Plate | Structure(1): Wall, PushBlock, Mirrors, Grate, Cracked | Object(2): Torch | Deco(3): Skull, Bones, etc
 const LAYER_NAMES = ['Ground', 'Structure', 'Object', 'Deco', 'Deco 2'];
 
@@ -413,7 +422,7 @@ function migratePack(p) {
 }
 
 // ====== TILE TYPES ======
-const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42, TRAFFIC_LIGHT = 43, FIRE_HYDRANT = 44, MANHOLE = 45, TRASH_CAN = 46, TRAIN_FRONT = 47, TRAIN_BODY = 48, TRAIN_WINDOW = 49, TRAIN_SEAT = 50, TRAIN_WHEEL = 51, BARREL = 52, SUBWAY_WALL = 53, PLATFORM_EDGE = 54, SUBWAY_SIGN = 55, TURNSTILE = 56, SUBWAY_MAP = 57, SUBWAY_PILLAR = 58;
+const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42, TRAFFIC_LIGHT = 43, FIRE_HYDRANT = 44, MANHOLE = 45, TRASH_CAN = 46, TRAIN_FRONT = 47, TRAIN_BODY = 48, TRAIN_WINDOW = 49, TRAIN_SEAT = 50, TRAIN_WHEEL = 51, BARREL = 52, SUBWAY_WALL = 53, PLATFORM_EDGE = 54, SUBWAY_SIGN = 55, TURNSTILE = 56, SUBWAY_MAP = 57, SUBWAY_PILLAR = 58, FLOOR_TILE = 59;
 const ROTATABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE, TRAIN_FRONT, TRAIN_BODY, TRAIN_WINDOW, TRAIN_SEAT, TRAIN_WHEEL, PLATFORM_EDGE, SUBWAY_WALL]);
 
 // Theme system
@@ -474,12 +483,15 @@ const TILE_INFO = [
   { id: 56, name: 'Turnstile', color: '#888', cat: 'Subway' },
   { id: 57, name: 'Subway Map', color: '#ddd', cat: 'Subway' },
   { id: 58, name: 'Subway Pillar', color: '#777', cat: 'Subway' },
+  { id: 59, name: 'Floor Tile', color: '#888', cat: 'Deco' },
 ];
 
 const TILE_SIZE = 40;
 let cols = 12, rows = 10;
 let selectedTile = 1;
 let selectedLayer = 1;
+let floorTileColor = '#888888';
+let eyedropperActive = false;
 let currentLevelIndex = 0;
 
 // Pack data
@@ -529,9 +541,38 @@ TILE_INFO.forEach(t => {
     // Auto-switch to the tile's natural layer
     const layer = TILE_LAYERS[t.id];
     if (layer >= 0) setLayer(layer);
+    // Show/hide floor tile color picker
+    document.getElementById('floor-tile-picker').style.display = (t.id === FLOOR_TILE) ? 'block' : 'none';
   };
   row.appendChild(btn);
 });
+
+// ====== FLOOR TILE COLOR PICKER ======
+document.getElementById('floor-tile-color').addEventListener('input', e => {
+  floorTileColor = e.target.value;
+  document.getElementById('floor-tile-hex').textContent = floorTileColor;
+});
+document.getElementById('eyedropper-btn').addEventListener('click', () => {
+  eyedropperActive = !eyedropperActive;
+  document.getElementById('eyedropper-btn').style.background = eyedropperActive ? '#557' : '#333';
+  canvas.style.cursor = eyedropperActive ? 'crosshair' : '';
+});
+
+function eyedropperPick(e) {
+  if (!eyedropperActive) return false;
+  const rect = canvas.getBoundingClientRect();
+  const px = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
+  const py = Math.round((e.clientY - rect.top) * (canvas.height / rect.height));
+  const imgData = ctx.getImageData(px, py, 1, 1).data;
+  const hex = '#' + [imgData[0], imgData[1], imgData[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+  floorTileColor = hex;
+  document.getElementById('floor-tile-color').value = hex;
+  document.getElementById('floor-tile-hex').textContent = hex;
+  eyedropperActive = false;
+  document.getElementById('eyedropper-btn').style.background = '#333';
+  canvas.style.cursor = '';
+  return true;
+}
 
 function setLayer(l) {
   selectedLayer = l;
@@ -1147,6 +1188,14 @@ function drawEditorTile(ctx, x, y, s, tileId, npcFacingIdx, npcColor, rotation) 
     ctx.fillStyle = '#666'; ctx.fillRect(cx2-s*0.08, y, s*0.06, s);
     ctx.fillStyle = '#444'; ctx.fillRect(cx2+s*0.06, y, s*0.06, s);
     ctx.fillStyle = '#777'; ctx.fillRect(cx2-s*0.16, y, s*0.32, s*0.08); ctx.fillRect(cx2-s*0.16, y+s*0.92, s*0.32, s*0.08);
+  } else if (tileId === FLOOR_TILE) {
+    ctx.fillStyle = npcColor || '#888';
+    ctx.fillRect(x+s*0.02, y+s*0.02, s*0.96, s*0.96);
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x+s*0.02, y+s*0.02, s*0.96, s*0.96);
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fillRect(x+s*0.04, y+s*0.04, s*0.92, s*0.04);
+    ctx.fillRect(x+s*0.04, y+s*0.04, s*0.04, s*0.92);
   }
   if (_rotated) ctx.restore();
 }
@@ -1208,6 +1257,9 @@ function drawEditor() {
           if ((l === 3 || l === 4) && cell[l] === DRAGON_NPC) {
             const np = (lvl.cellProps && lvl.cellProps[c+','+r]) || {};
             drawEditorTile(ctx, x, y, TILE_SIZE, cell[l], np.npcFacing, np.npcColor);
+          } else if ((l === 3 || l === 4) && cell[l] === FLOOR_TILE) {
+            const np = (lvl.cellProps && lvl.cellProps[c+','+r]) || {};
+            drawEditorTile(ctx, x, y, TILE_SIZE, cell[l], undefined, np.floorTileColor);
           } else if ((l === 3 || l === 4) && ROTATABLE_DECO.has(cell[l])) {
             const np = (lvl.cellProps && lvl.cellProps[c+','+r]) || {};
             drawEditorTile(ctx, x, y, TILE_SIZE, cell[l], undefined, undefined, np.rotation);
@@ -1258,6 +1310,7 @@ let paintButton = 0;
 
 canvas.addEventListener('mousedown', e => {
   e.preventDefault();
+  if (eyedropperActive && e.button === 0) { eyedropperPick(e); return; }
   if (contextMenuOpen) { hideContextMenu(); return; }
   if (e.shiftKey && e.button === 0) { e.stopPropagation(); showContextMenu(e); return; }
   if (editorTool === 'connect') { handleConnectClick(e); return; }
@@ -1293,6 +1346,13 @@ function paintAt(e) {
   } else {
     // Place tile on selected layer
     lvl.map[r][c][selectedLayer] = selectedTile;
+    // Store floor tile color in cellProps
+    if (selectedTile === FLOOR_TILE) {
+      if (!lvl.cellProps) lvl.cellProps = {};
+      const key = c + ',' + r;
+      if (!lvl.cellProps[key]) lvl.cellProps[key] = {};
+      lvl.cellProps[key].floorTileColor = floorTileColor;
+    }
   }
   drawEditor();
 }
@@ -1801,6 +1861,24 @@ function showContextMenu(e) {
     });
   }
 
+  if (cell[3] === FLOOR_TILE || cell[4] === FLOOR_TILE) {
+    if (!lvl.cellProps) lvl.cellProps = {};
+    const key = c + ',' + r;
+    const curProps = (lvl.cellProps[key]) || {};
+    items.push({
+      type: 'floor_tile_color',
+      currentColor: curProps.floorTileColor || '#888888',
+      onSave: (newColor) => {
+        preEditSnapshot = captureSnapshot();
+        if (!lvl.cellProps) lvl.cellProps = {};
+        if (!lvl.cellProps[key]) lvl.cellProps[key] = {};
+        lvl.cellProps[key].floorTileColor = newColor;
+        pushUndo(); drawEditor(); hideContextMenu();
+        setStatus(`Floor tile color set to ${newColor}`);
+      }
+    });
+  }
+
   if ((cell[3] && ROTATABLE_DECO.has(cell[3])) || (cell[4] && ROTATABLE_DECO.has(cell[4]))) {
     if (!lvl.cellProps) lvl.cellProps = {};
     const key = c + ',' + r;
@@ -1840,6 +1918,19 @@ function showContextMenu(e) {
       const taText = document.createElement('textarea'); taText.value = item.text; taText.style.cssText = taSty + 'height:60px;'; taText.addEventListener('keydown', e => e.stopPropagation()); content.appendChild(taText);
       const saveBtn = document.createElement('button'); saveBtn.className = 'cm-item'; saveBtn.textContent = 'Save'; saveBtn.style.cssText = 'color:#4a7;text-align:center;';
       saveBtn.onclick = () => item.onSave(taSub.value, taText.value);
+      content.appendChild(saveBtn);
+      return;
+    }
+    if (item.type === 'floor_tile_color') {
+      const lblSty = 'cursor:default;padding:4px 8px;';
+      const lblC = document.createElement('div'); lblC.className = 'cm-item'; lblC.style.cssText = lblSty; lblC.textContent = 'Tile Color:'; content.appendChild(lblC);
+      const colorRow = document.createElement('div'); colorRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:0 8px 4px;';
+      const colorInput = document.createElement('input'); colorInput.type = 'color'; colorInput.value = item.currentColor; colorInput.style.cssText = 'width:36px;height:28px;border:1px solid #555;background:#222;cursor:pointer;';
+      const colorLabel = document.createElement('span'); colorLabel.style.cssText = 'color:#aaa;font:12px monospace;'; colorLabel.textContent = item.currentColor;
+      colorInput.addEventListener('input', () => { colorLabel.textContent = colorInput.value; });
+      colorRow.appendChild(colorInput); colorRow.appendChild(colorLabel); content.appendChild(colorRow);
+      const saveBtn = document.createElement('button'); saveBtn.className = 'cm-item'; saveBtn.textContent = 'Save'; saveBtn.style.cssText = 'color:#4a7;text-align:center;';
+      saveBtn.onclick = () => item.onSave(colorInput.value);
       content.appendChild(saveBtn);
       return;
     }
@@ -2303,7 +2394,7 @@ function testLevel() {
     gear:30, pipe:31, crate:32, spike:33, paper:34, door_closed:35, door_open:36,
     railway:37, road:38, lamppost:39, bench:40, fountain:41, dragon_npc:42
   };
-  const TILE_LAYERS_MAP = {0:-1, 10:0, 4:0, 17:0, 18:0, 19:0, 20:0, 21:0, 22:0, 33:0, 1:1, 9:1, 5:1, 6:1, 8:1, 13:1, 14:1, 23:1, 35:1, 36:1, 2:2, 3:2, 11:2, 12:2, 15:2, 16:2, 24:2, 25:2, 26:3, 27:3, 28:3, 29:3, 30:3, 31:3, 32:3, 34:3, 37:3, 38:3, 39:3, 40:3, 41:3, 42:3, 43:3, 44:3, 45:3, 46:3, 47:3, 48:3, 49:3, 50:3, 51:3, 52:3};
+  const TILE_LAYERS_MAP = {0:-1, 10:0, 4:0, 17:0, 18:0, 19:0, 20:0, 21:0, 22:0, 33:0, 1:1, 9:1, 5:1, 6:1, 8:1, 13:1, 14:1, 23:1, 35:1, 36:1, 2:2, 3:2, 11:2, 12:2, 15:2, 16:2, 24:2, 25:2, 26:3, 27:3, 28:3, 29:3, 30:3, 31:3, 32:3, 34:3, 37:3, 38:3, 39:3, 40:3, 41:3, 42:3, 43:3, 44:3, 45:3, 46:3, 47:3, 48:3, 49:3, 50:3, 51:3, 52:3, 53:3, 54:3, 55:3, 56:3, 57:3, 58:3, 59:3};
   const T_CON_CMDS = ['setpos', 'shoot', 'ball_of_fire', 'help', 'clear', 'tp', 'noclip', 'god',
     'inspect', 'fill', 'reset', 'time', 'explode', 'light', 'dark', 'swap', 'mirror', 'rain',
     'count', 'undo', 'connections', 'state', 'assign', 'unassign', 'props', 'trigger', 'where', 'tiles', 'highlight',
@@ -3095,6 +3186,7 @@ function testLevel() {
       else if(d3===TURNSTILE){drawEditorTile(tCtx,x,y,T,TURNSTILE);}
       else if(d3===SUBWAY_MAP){drawEditorTile(tCtx,x,y,T,SUBWAY_MAP);}
       else if(d3===SUBWAY_PILLAR){drawEditorTile(tCtx,x,y,T,SUBWAY_PILLAR);}
+      else if(d3===FLOOR_TILE){const fp=(lvl.cellProps&&lvl.cellProps[c+','+r])||{};drawEditorTile(tCtx,x,y,T,FLOOR_TILE,undefined,fp.floorTileColor);}
       else if(d3===DRAGON_NPC){const np=(lvl.cellProps&&lvl.cellProps[c+','+r])||{};const nf=[[1,0],[0,1],[-1,0],[0,-1]][np.npcFacing||0];const colors=npcPal(np.npcColor||'#3a7d44');const dfx=nf[0],dfy=nf[1];tCtx.fillStyle=colors.body;tCtx.fillRect(x+T*0.2,y+T*0.25,T*0.6,T*0.55);tCtx.fillStyle=colors.belly;tCtx.fillRect(x+T*0.3,y+T*0.4,T*0.4,T*0.35);const hx=x+T*0.5+dfx*T*0.2,hy=y+T*0.25+dfy*T*0.15;tCtx.fillStyle=colors.body;tCtx.beginPath();tCtx.arc(hx,hy,T*0.2,0,Math.PI*2);tCtx.fill();tCtx.fillStyle=colors.eyes;const ex1=hx+dfx*T*0.06-dfy*T*0.08,ey1=hy+dfy*T*0.06+dfx*T*0.08;const ex2=hx+dfx*T*0.06+dfy*T*0.08,ey2=hy+dfy*T*0.06-dfx*T*0.08;tCtx.beginPath();tCtx.arc(ex1,ey1,T*0.04,0,Math.PI*2);tCtx.fill();tCtx.beginPath();tCtx.arc(ex2,ey2,T*0.04,0,Math.PI*2);tCtx.fill();tCtx.fillStyle=colors.wings;if(dfx!==0){tCtx.beginPath();tCtx.moveTo(x+T*0.3,y+T*0.3);tCtx.lineTo(x+T*0.5,y+T*0.05);tCtx.lineTo(x+T*0.7,y+T*0.3);tCtx.fill();}else{tCtx.beginPath();tCtx.moveTo(x+T*0.15,y+T*0.3);tCtx.lineTo(x-T*0.05,y+T*0.15);tCtx.lineTo(x+T*0.2,y+T*0.5);tCtx.fill();tCtx.beginPath();tCtx.moveTo(x+T*0.85,y+T*0.3);tCtx.lineTo(x+T*1.05,y+T*0.15);tCtx.lineTo(x+T*0.8,y+T*0.5);tCtx.fill();}tCtx.strokeStyle=colors.body;tCtx.lineWidth=3;tCtx.beginPath();tCtx.moveTo(x+T*0.5-dfx*T*0.3,y+T*0.7-dfy*T*0.2);tCtx.quadraticCurveTo(x+T*0.5-dfx*T*0.55,y+T*0.8-dfy*T*0.3,x+T*0.5-dfx*T*0.45,y+T*0.9-dfy*T*0.15);tCtx.stroke();tCtx.fillStyle=colors.horns;tCtx.beginPath();tCtx.moveTo(hx-T*0.08,hy-T*0.12);tCtx.lineTo(hx-T*0.04,hy-T*0.25);tCtx.lineTo(hx+T*0.02,hy-T*0.12);tCtx.fill();tCtx.beginPath();tCtx.moveTo(hx+T*0.04,hy-T*0.12);tCtx.lineTo(hx+T*0.1,hy-T*0.25);tCtx.lineTo(hx+T*0.14,hy-T*0.12);tCtx.fill();tCtx.fillStyle='rgba(255,255,255,0.7)';tCtx.font='10px monospace';tCtx.textAlign='center';tCtx.fillText('...',hx,hy-T*0.28);}
       if(dRot)tCtx.restore();
       // Layer 4: deco2
@@ -3129,6 +3221,7 @@ function testLevel() {
       else if(d4===TURNSTILE){drawEditorTile(tCtx,x,y,T,TURNSTILE);}
       else if(d4===SUBWAY_MAP){drawEditorTile(tCtx,x,y,T,SUBWAY_MAP);}
       else if(d4===SUBWAY_PILLAR){drawEditorTile(tCtx,x,y,T,SUBWAY_PILLAR);}
+      else if(d4===FLOOR_TILE){const fp=(lvl.cellProps&&lvl.cellProps[c+','+r])||{};drawEditorTile(tCtx,x,y,T,FLOOR_TILE,undefined,fp.floorTileColor);}
       else if(d4===DRAGON_NPC){const np=(lvl.cellProps&&lvl.cellProps[c+','+r])||{};const nf=[[1,0],[0,1],[-1,0],[0,-1]][np.npcFacing||0];const colors=npcPal(np.npcColor||'#3a7d44');const dfx=nf[0],dfy=nf[1];tCtx.fillStyle=colors.body;tCtx.fillRect(x+T*0.2,y+T*0.25,T*0.6,T*0.55);tCtx.fillStyle=colors.belly;tCtx.fillRect(x+T*0.3,y+T*0.4,T*0.4,T*0.35);const hx=x+T*0.5+dfx*T*0.2,hy=y+T*0.25+dfy*T*0.15;tCtx.fillStyle=colors.body;tCtx.beginPath();tCtx.arc(hx,hy,T*0.2,0,Math.PI*2);tCtx.fill();tCtx.fillStyle=colors.eyes;const ex1=hx+dfx*T*0.06-dfy*T*0.08,ey1=hy+dfy*T*0.06+dfx*T*0.08;const ex2=hx+dfx*T*0.06+dfy*T*0.08,ey2=hy+dfy*T*0.06-dfx*T*0.08;tCtx.beginPath();tCtx.arc(ex1,ey1,T*0.04,0,Math.PI*2);tCtx.fill();tCtx.beginPath();tCtx.arc(ex2,ey2,T*0.04,0,Math.PI*2);tCtx.fill();tCtx.fillStyle=colors.wings;if(dfx!==0){tCtx.beginPath();tCtx.moveTo(x+T*0.3,y+T*0.3);tCtx.lineTo(x+T*0.5,y+T*0.05);tCtx.lineTo(x+T*0.7,y+T*0.3);tCtx.fill();}else{tCtx.beginPath();tCtx.moveTo(x+T*0.15,y+T*0.3);tCtx.lineTo(x-T*0.05,y+T*0.15);tCtx.lineTo(x+T*0.2,y+T*0.5);tCtx.fill();tCtx.beginPath();tCtx.moveTo(x+T*0.85,y+T*0.3);tCtx.lineTo(x+T*1.05,y+T*0.15);tCtx.lineTo(x+T*0.8,y+T*0.5);tCtx.fill();}tCtx.strokeStyle=colors.body;tCtx.lineWidth=3;tCtx.beginPath();tCtx.moveTo(x+T*0.5-dfx*T*0.3,y+T*0.7-dfy*T*0.2);tCtx.quadraticCurveTo(x+T*0.5-dfx*T*0.55,y+T*0.8-dfy*T*0.3,x+T*0.5-dfx*T*0.45,y+T*0.9-dfy*T*0.15);tCtx.stroke();tCtx.fillStyle=colors.horns;tCtx.beginPath();tCtx.moveTo(hx-T*0.08,hy-T*0.12);tCtx.lineTo(hx-T*0.04,hy-T*0.25);tCtx.lineTo(hx+T*0.02,hy-T*0.12);tCtx.fill();tCtx.beginPath();tCtx.moveTo(hx+T*0.04,hy-T*0.12);tCtx.lineTo(hx+T*0.1,hy-T*0.25);tCtx.lineTo(hx+T*0.14,hy-T*0.12);tCtx.fill();tCtx.fillStyle='rgba(255,255,255,0.7)';tCtx.font='10px monospace';tCtx.textAlign='center';tCtx.fillText('...',hx,hy-T*0.28);}
       if(d4Rot)tCtx.restore();
     }
