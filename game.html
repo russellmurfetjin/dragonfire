@@ -1095,14 +1095,14 @@ function drawManhole(gx, gy) {
   // Inner
   ctx.fillStyle = '#444';
   ctx.beginPath(); ctx.arc(x, y, TILE * 0.32, 0, Math.PI * 2); ctx.fill();
-  // Cross pattern
+  // Vertical lines (grate pattern)
   ctx.strokeStyle = '#555';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(x - 8, y); ctx.lineTo(x + 8, y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(x, y - 8); ctx.lineTo(x, y + 8); ctx.stroke();
-  // Center bolt
-  ctx.fillStyle = '#666';
-  ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.lineWidth = 1.5;
+  for (let i = -2; i <= 2; i++) {
+    const lx = x + i * 5;
+    const halfH = Math.sqrt(Math.max(0, (TILE * 0.28) ** 2 - (i * 5) ** 2));
+    ctx.beginPath(); ctx.moveTo(lx, y - halfH); ctx.lineTo(lx, y + halfH); ctx.stroke();
+  }
   // Rim highlight
   ctx.strokeStyle = 'rgba(255,255,255,0.1)';
   ctx.lineWidth = 1;
@@ -1111,26 +1111,26 @@ function drawManhole(gx, gy) {
 
 function drawTrashCan(gx, gy) {
   const x = gx * TILE + TILE / 2, y = gy * TILE;
-  // Body
+  // Body (wider)
   ctx.fillStyle = '#555';
-  ctx.fillRect(x - 8, y + 10, 16, TILE - 14);
-  // Slightly tapered look
+  ctx.fillRect(x - 12, y + 10, 24, TILE - 14);
+  // Inner shade
   ctx.fillStyle = '#4a4a4a';
-  ctx.fillRect(x - 6, y + 12, 12, TILE - 18);
+  ctx.fillRect(x - 10, y + 12, 20, TILE - 18);
   // Lid
   ctx.fillStyle = '#666';
-  ctx.fillRect(x - 9, y + 6, 18, 5);
+  ctx.fillRect(x - 14, y + 6, 28, 5);
   // Handle
   ctx.strokeStyle = '#777';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(x, y + 5, 4, Math.PI, 0);
+  ctx.arc(x, y + 5, 5, Math.PI, 0);
   ctx.stroke();
   // Horizontal bands
   ctx.strokeStyle = '#5a5a5a';
   ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(x - 7, y + 20); ctx.lineTo(x + 7, y + 20); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(x - 7, y + 30); ctx.lineTo(x + 7, y + 30); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - 11, y + 20); ctx.lineTo(x + 11, y + 20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - 11, y + 30); ctx.lineTo(x + 11, y + 30); ctx.stroke();
 }
 
 // Train building tiles (default orientation: facing right)

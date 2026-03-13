@@ -1031,19 +1031,23 @@ function drawEditorTile(ctx, x, y, s, tileId, npcFacingIdx, npcColor, rotation) 
     const cx2 = x + s/2, cy2 = y + s/2;
     ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(cx2, cy2, s*0.4, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(cx2, cy2, s*0.32, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx2-s*0.16, cy2); ctx.lineTo(cx2+s*0.16, cy2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx2, cy2-s*0.16); ctx.lineTo(cx2, cy2+s*0.16); ctx.stroke();
-    ctx.fillStyle = '#666'; ctx.beginPath(); ctx.arc(cx2, cy2, s*0.04, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 1.5;
+    for (let i = -2; i <= 2; i++) {
+      const lx = cx2 + i * s*0.1;
+      const halfH = Math.sqrt(Math.max(0, (s*0.28)**2 - (i*s*0.1)**2));
+      ctx.beginPath(); ctx.moveTo(lx, cy2-halfH); ctx.lineTo(lx, cy2+halfH); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx2, cy2, s*0.38, Math.PI*1.2, Math.PI*1.7); ctx.stroke();
   } else if (tileId === TRASH_CAN) {
     const cx2 = x + s/2;
-    ctx.fillStyle = '#555'; ctx.fillRect(cx2-s*0.16, y+s*0.2, s*0.32, s*0.7);
-    ctx.fillStyle = '#4a4a4a'; ctx.fillRect(cx2-s*0.12, y+s*0.24, s*0.24, s*0.6);
-    ctx.fillStyle = '#666'; ctx.fillRect(cx2-s*0.18, y+s*0.12, s*0.36, s*0.1);
-    ctx.strokeStyle = '#777'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx2, y+s*0.1, s*0.08, Math.PI, 0); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.fillRect(cx2-s*0.24, y+s*0.2, s*0.48, s*0.7);
+    ctx.fillStyle = '#4a4a4a'; ctx.fillRect(cx2-s*0.2, y+s*0.24, s*0.4, s*0.6);
+    ctx.fillStyle = '#666'; ctx.fillRect(cx2-s*0.28, y+s*0.12, s*0.56, s*0.1);
+    ctx.strokeStyle = '#777'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx2, y+s*0.1, s*0.1, Math.PI, 0); ctx.stroke();
     ctx.strokeStyle = '#5a5a5a'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(cx2-s*0.14, y+s*0.5); ctx.lineTo(cx2+s*0.14, y+s*0.5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx2-s*0.14, y+s*0.7); ctx.lineTo(cx2+s*0.14, y+s*0.7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx2-s*0.22, y+s*0.5); ctx.lineTo(cx2+s*0.22, y+s*0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx2-s*0.22, y+s*0.7); ctx.lineTo(cx2+s*0.22, y+s*0.7); ctx.stroke();
   } else if (tileId === TRAIN_FRONT) {
     ctx.fillStyle = '#8b2020'; ctx.fillRect(x, y+s*0.12, s*0.92, s*0.76);
     ctx.fillStyle = '#a02828'; ctx.beginPath(); ctx.moveTo(x+s*0.92, y+s*0.12); ctx.lineTo(x+s, y+s*0.24); ctx.lineTo(x+s, y+s*0.76); ctx.lineTo(x+s*0.92, y+s*0.88); ctx.fill();
