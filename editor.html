@@ -202,15 +202,6 @@
   <h3>Tiles</h3>
   <div class="tile-grid" id="tile-palette"></div>
 
-  <div id="floor-tile-picker" style="display:none; padding:4px 0 8px;">
-    <h3 style="margin:4px 0">Floor Tile Color</h3>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <input type="color" id="floor-tile-color" value="#888888" style="width:36px;height:28px;border:1px solid #555;background:#222;cursor:pointer;">
-      <span id="floor-tile-hex" style="color:#aaa;font:12px monospace;">#888888</span>
-      <button id="eyedropper-btn" style="background:#333;color:#ccc;border:1px solid #555;padding:2px 8px;cursor:pointer;font:12px monospace;" title="Pick color from canvas">&#128371;</button>
-    </div>
-  </div>
-
   <h3>Layer</h3>
   <div class="btn-row" id="layer-btns">
     <button class="btn btn-layer" onclick="setLayer(0)">Ground</button>
@@ -541,10 +532,18 @@ TILE_INFO.forEach(t => {
     // Auto-switch to the tile's natural layer
     const layer = TILE_LAYERS[t.id];
     if (layer >= 0) setLayer(layer);
-    // Show/hide floor tile color picker
-    document.getElementById('floor-tile-picker').style.display = (t.id === FLOOR_TILE) ? 'block' : 'none';
   };
   row.appendChild(btn);
+  // Add inline color picker right under the Floor Tile button
+  if (t.id === FLOOR_TILE) {
+    const pickerRow = document.createElement('div');
+    pickerRow.id = 'floor-tile-picker';
+    pickerRow.style.cssText = 'display:flex;align-items:center;gap:4px;padding:2px 0 4px;width:100%;';
+    pickerRow.innerHTML = '<input type="color" id="floor-tile-color" value="#888888" style="width:28px;height:22px;border:1px solid #555;background:#222;cursor:pointer;padding:0;">' +
+      '<span id="floor-tile-hex" style="color:#aaa;font:11px monospace;">#888888</span>' +
+      '<button id="eyedropper-btn" style="background:#333;color:#ccc;border:1px solid #555;padding:1px 6px;cursor:pointer;font:11px monospace;margin-left:auto;" title="Pick color from canvas">&#128371;</button>';
+    row.appendChild(pickerRow);
+  }
 });
 
 // ====== FLOOR TILE COLOR PICKER ======
