@@ -266,8 +266,19 @@ const skinColors = _skinData.parts ? { ..._skinData.parts } : { ...SKIN_DEFAULT 
 const weaponMode = _skinData.weapon === 'gun' ? 'gun' : 'fire';
 
 // Tile types
-const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, EXIT = 7, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42;
-const ROTATABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE]);
+const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, EXIT = 7, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42, TRAFFIC_LIGHT = 43, FIRE_HYDRANT = 44, MANHOLE = 45, TRASH_CAN = 46, TRAIN_FRONT = 47, TRAIN_BODY = 48, TRAIN_WINDOW = 49, TRAIN_SEAT = 50, TRAIN_WHEEL = 51, BARREL = 52;
+const ROTATABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE, TRAIN_FRONT, TRAIN_BODY, TRAIN_WINDOW, TRAIN_SEAT, TRAIN_WHEEL]);
+
+// Theme system
+const THEMES = {
+  classic:  { floor: '#2a2a3e', floorBorder: '#333350', wall: '#4a4a5e', wallDark: '#3a3a4e', wallLight: '#555570', bg: '#1a1a2e', cracked: '#5a4a3e', crackedDark: '#4a3a2e', crackedLight: '#6a5548' },
+  cave:     { floor: '#2e2518', floorBorder: '#3a3020', wall: '#6a5438', wallDark: '#5a4428', wallLight: '#7a6448', bg: '#1a1508', cracked: '#6a5030', crackedDark: '#5a4020', crackedLight: '#7a6040' },
+  city:     { floor: '#3a3a3a', floorBorder: '#4a4a4a', wall: '#6a6a6a', wallDark: '#5a5a5a', wallLight: '#7a7a7a', bg: '#1a1a1a', cracked: '#5a5a5a', crackedDark: '#4a4a4a', crackedLight: '#6a6a6a' },
+  factory:  { floor: '#282830', floorBorder: '#333340', wall: '#4a4a55', wallDark: '#3a3a45', wallLight: '#5a5a65', bg: '#141418', cracked: '#4a4a50', crackedDark: '#3a3a40', crackedLight: '#5a5a60' },
+  forest:   { floor: '#1e2e1a', floorBorder: '#283820', wall: '#3a5a32', wallDark: '#2a4a22', wallLight: '#4a6a42', bg: '#0a1a08', cracked: '#4a5a30', crackedDark: '#3a4a20', crackedLight: '#5a6a40' },
+  railway:  { floor: '#2a2420', floorBorder: '#352f28', wall: '#5a4a3a', wallDark: '#4a3a2a', wallLight: '#6a5a4a', bg: '#1a1410', cracked: '#5a4830', crackedDark: '#4a3820', crackedLight: '#6a5840' },
+};
+let currentTheme = THEMES.classic;
 
 // Layer helpers
 function cellToLayers(val) {
@@ -276,7 +287,7 @@ function cellToLayers(val) {
   if (val === WATER || val === ICE || val === WATER_DRY || (val >= BELT_UP && val <= BELT_LEFT) || val === PLATE || val === SPIKE) return [val, 0, 0, 0, 0];
   if (val === WALL || val === PUSH_BLOCK || val === MIRROR_NE || val === MIRROR_NW || val === GRATE || val === GATE_OPEN || val === GATE_CLOSED || val === CRACKED || val === DOOR_CLOSED || val === DOOR_OPEN) return [0, val, 0, 0, 0];
   if (val === TORCH_OFF || val === TORCH_ON || val === TOGGLE_OFF || val === TOGGLE_ON || val === LEVER_OFF || val === LEVER_ON || val === EYE_OFF || val === EYE_ON) return [0, 0, val, 0, 0];
-  if ((val >= SKULL && val <= CRATE) || val === PAPER || (val >= RAILWAY && val <= DRAGON_NPC)) return [0, 0, 0, val, 0];
+  if ((val >= SKULL && val <= CRATE) || val === PAPER || (val >= RAILWAY && val <= BARREL)) return [0, 0, 0, val, 0];
   return [0, 0, 0, 0, 0];
 }
 
@@ -472,6 +483,7 @@ function loadLevel(n) {
   highlightConns = false;
   undoState = null;
   canvas.style.border = '2px solid #444'; // reset CSS border
+  currentTheme = THEMES[lvl.theme] || THEMES.classic;
   applyInitialPower();
   initPlates();
   updateFacingForEyes();
@@ -661,12 +673,12 @@ function drawDragon(px, py, facingX, facingY) {
 
 function drawWall(gx, gy) {
   const x = gx * TILE, y = gy * TILE;
-  ctx.fillStyle = '#4a4a5e';
+  ctx.fillStyle = currentTheme.wall;
   ctx.fillRect(x, y, TILE, TILE);
-  ctx.fillStyle = '#3a3a4e';
+  ctx.fillStyle = currentTheme.wallDark;
   ctx.fillRect(x+2, y+2, TILE/2-3, TILE/2-3);
   ctx.fillRect(x+TILE/2+1, y+TILE/2+1, TILE/2-3, TILE/2-3);
-  ctx.fillStyle = '#555570';
+  ctx.fillStyle = currentTheme.wallLight;
   ctx.fillRect(x+TILE/2+1, y+2, TILE/2-3, TILE/2-3);
   ctx.fillRect(x+2, y+TILE/2+1, TILE/2-3, TILE/2-3);
 }
@@ -775,7 +787,7 @@ function drawSkull(gx, gy) {
   const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
   ctx.fillStyle = '#bbb';
   ctx.beginPath(); ctx.arc(x, y - 2, 8, Math.PI, 0); ctx.lineTo(x + 6, y + 6); ctx.lineTo(x - 6, y + 6); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#1a1a2e';
+  ctx.fillStyle = currentTheme.bg;
   ctx.beginPath(); ctx.arc(x - 3, y, 2, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.arc(x + 3, y, 2, 0, Math.PI * 2); ctx.fill();
   ctx.fillRect(x - 1, y + 3, 2, 2);
@@ -1029,6 +1041,252 @@ function drawDragonNPC(gx, gy, facingX, facingY, bodyColor) {
   ctx.fillText('...', hx, hy - s*0.28);
 }
 
+function drawTrafficLight(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE;
+  // Post
+  ctx.fillStyle = '#444';
+  ctx.fillRect(x - 2, y + TILE * 0.55, 4, TILE * 0.45);
+  // Housing
+  ctx.fillStyle = '#333';
+  ctx.fillRect(x - 7, y + 2, 14, TILE * 0.55);
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - 7, y + 2, 14, TILE * 0.55);
+  // Lights: red, yellow, green
+  const colors = ['#ff2222', '#ffcc00', '#22cc44'];
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = colors[i];
+    ctx.beginPath(); ctx.arc(x, y + 8 + i * 7, 3, 0, Math.PI * 2); ctx.fill();
+    // Glow on green
+    if (i === 2) {
+      ctx.fillStyle = 'rgba(34,204,68,0.12)';
+      ctx.beginPath(); ctx.arc(x, y + 8 + i * 7, 8, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawFireHydrant(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  // Base
+  ctx.fillStyle = '#aa2222';
+  ctx.fillRect(x - 5, y + 2, 10, 10);
+  // Body
+  ctx.fillStyle = '#cc3333';
+  ctx.fillRect(x - 4, y - 8, 8, 18);
+  // Top cap
+  ctx.fillStyle = '#aa2222';
+  ctx.fillRect(x - 6, y - 10, 12, 4);
+  ctx.fillStyle = '#dd4444';
+  ctx.beginPath(); ctx.arc(x, y - 10, 4, Math.PI, 0); ctx.fill();
+  // Side nozzles
+  ctx.fillStyle = '#993333';
+  ctx.fillRect(x - 8, y - 4, 4, 4);
+  ctx.fillRect(x + 4, y - 4, 4, 4);
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fillRect(x - 2, y - 7, 2, 14);
+}
+
+function drawManhole(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  // Outer ring
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.arc(x, y, TILE * 0.4, 0, Math.PI * 2); ctx.fill();
+  // Inner
+  ctx.fillStyle = '#444';
+  ctx.beginPath(); ctx.arc(x, y, TILE * 0.32, 0, Math.PI * 2); ctx.fill();
+  // Cross pattern
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x - 8, y); ctx.lineTo(x + 8, y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y - 8); ctx.lineTo(x, y + 8); ctx.stroke();
+  // Center bolt
+  ctx.fillStyle = '#666';
+  ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+  // Rim highlight
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(x, y, TILE * 0.38, Math.PI * 1.2, Math.PI * 1.7); ctx.stroke();
+}
+
+function drawTrashCan(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE;
+  // Body
+  ctx.fillStyle = '#555';
+  ctx.fillRect(x - 8, y + 10, 16, TILE - 14);
+  // Slightly tapered look
+  ctx.fillStyle = '#4a4a4a';
+  ctx.fillRect(x - 6, y + 12, 12, TILE - 18);
+  // Lid
+  ctx.fillStyle = '#666';
+  ctx.fillRect(x - 9, y + 6, 18, 5);
+  // Handle
+  ctx.strokeStyle = '#777';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x, y + 5, 4, Math.PI, 0);
+  ctx.stroke();
+  // Horizontal bands
+  ctx.strokeStyle = '#5a5a5a';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - 7, y + 20); ctx.lineTo(x + 7, y + 20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - 7, y + 30); ctx.lineTo(x + 7, y + 30); ctx.stroke();
+}
+
+// Train building tiles (default orientation: facing right)
+function drawTrainFront(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Body
+  ctx.fillStyle = '#8b2020';
+  ctx.fillRect(x, y + 6, TILE - 4, TILE - 12);
+  // Front nose
+  ctx.fillStyle = '#a02828';
+  ctx.beginPath();
+  ctx.moveTo(x + TILE - 4, y + 6);
+  ctx.lineTo(x + TILE, y + 12);
+  ctx.lineTo(x + TILE, y + TILE - 12);
+  ctx.lineTo(x + TILE - 4, y + TILE - 6);
+  ctx.fill();
+  // Smokestack
+  ctx.fillStyle = '#555';
+  ctx.fillRect(x + 8, y, 8, 8);
+  ctx.fillStyle = '#666';
+  ctx.fillRect(x + 6, y, 12, 3);
+  // Headlight
+  ctx.fillStyle = '#ffcc44';
+  ctx.beginPath(); ctx.arc(x + TILE - 2, y + TILE / 2, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,220,100,0.15)';
+  ctx.beginPath(); ctx.arc(x + TILE - 2, y + TILE / 2, 8, 0, Math.PI * 2); ctx.fill();
+  // Stripe
+  ctx.fillStyle = '#cc8800';
+  ctx.fillRect(x, y + TILE / 2 - 2, TILE - 4, 4);
+  // Cowcatcher
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x + TILE - 2, y + TILE - 8); ctx.lineTo(x + TILE + 2, y + TILE - 4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + TILE - 2, y + TILE - 4); ctx.lineTo(x + TILE + 2, y + TILE - 4); ctx.stroke();
+}
+
+function drawTrainBody(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Main body
+  ctx.fillStyle = '#8b2020';
+  ctx.fillRect(x, y + 6, TILE, TILE - 12);
+  // Top edge
+  ctx.fillStyle = '#7a1a1a';
+  ctx.fillRect(x, y + 6, TILE, 3);
+  // Bottom edge
+  ctx.fillStyle = '#6a1515';
+  ctx.fillRect(x, y + TILE - 9, TILE, 3);
+  // Stripe
+  ctx.fillStyle = '#cc8800';
+  ctx.fillRect(x, y + TILE / 2 - 2, TILE, 4);
+  // Rivets
+  ctx.fillStyle = '#aa3030';
+  ctx.fillRect(x + 4, y + 10, 2, 2);
+  ctx.fillRect(x + TILE - 6, y + 10, 2, 2);
+  ctx.fillRect(x + 4, y + TILE - 14, 2, 2);
+  ctx.fillRect(x + TILE - 6, y + TILE - 14, 2, 2);
+}
+
+function drawTrainWindow(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Main body
+  ctx.fillStyle = '#8b2020';
+  ctx.fillRect(x, y + 6, TILE, TILE - 12);
+  // Top/bottom edges
+  ctx.fillStyle = '#7a1a1a';
+  ctx.fillRect(x, y + 6, TILE, 3);
+  ctx.fillStyle = '#6a1515';
+  ctx.fillRect(x, y + TILE - 9, TILE, 3);
+  // Window
+  ctx.fillStyle = '#8ec8e8';
+  ctx.fillRect(x + 8, y + 10, TILE - 16, TILE - 26);
+  ctx.strokeStyle = '#6a1515';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 8, y + 10, TILE - 16, TILE - 26);
+  // Window divider
+  ctx.beginPath(); ctx.moveTo(x + TILE / 2, y + 10); ctx.lineTo(x + TILE / 2, y + TILE - 16); ctx.stroke();
+  // Window shine
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.fillRect(x + 10, y + 12, 6, 6);
+  // Stripe below
+  ctx.fillStyle = '#cc8800';
+  ctx.fillRect(x, y + TILE - 14, TILE, 3);
+}
+
+function drawTrainSeat(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE;
+  // Seat base
+  ctx.fillStyle = '#6a3a2a';
+  ctx.fillRect(x - 8, y + TILE - 14, 16, 6);
+  // Seat cushion
+  ctx.fillStyle = '#cc4444';
+  ctx.fillRect(x - 7, y + TILE - 16, 14, 5);
+  // Backrest
+  ctx.fillStyle = '#cc4444';
+  ctx.fillRect(x - 7, y + 8, 4, TILE - 22);
+  // Backrest side
+  ctx.fillStyle = '#aa3333';
+  ctx.fillRect(x - 8, y + 8, 2, TILE - 22);
+  // Armrest
+  ctx.fillStyle = '#5a2a1a';
+  ctx.fillRect(x - 8, y + TILE / 2 - 2, 16, 3);
+  // Leg
+  ctx.fillStyle = '#444';
+  ctx.fillRect(x - 2, y + TILE - 8, 4, 8);
+}
+
+function drawTrainWheel(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Undercarriage bar
+  ctx.fillStyle = '#444';
+  ctx.fillRect(x, y + 4, TILE, 6);
+  // Coupling bar between wheels
+  ctx.fillStyle = '#555';
+  ctx.fillRect(x + 2, y + TILE / 2, TILE - 4, 3);
+  // Left wheel
+  ctx.fillStyle = '#333';
+  ctx.beginPath(); ctx.arc(x + 10, y + TILE - 10, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.arc(x + 10, y + TILE - 10, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#444';
+  ctx.beginPath(); ctx.arc(x + 10, y + TILE - 10, 2, 0, Math.PI * 2); ctx.fill();
+  // Right wheel
+  ctx.fillStyle = '#333';
+  ctx.beginPath(); ctx.arc(x + TILE - 10, y + TILE - 10, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.arc(x + TILE - 10, y + TILE - 10, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#444';
+  ctx.beginPath(); ctx.arc(x + TILE - 10, y + TILE - 10, 2, 0, Math.PI * 2); ctx.fill();
+  // Wheel rim highlights
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(x + 10, y + TILE - 10, 7, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x + TILE - 10, y + TILE - 10, 7, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawBarrel(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  // Body
+  ctx.fillStyle = '#6a4a2a';
+  ctx.beginPath(); ctx.ellipse(x, y, 10, 12, 0, 0, Math.PI * 2); ctx.fill();
+  // Highlight
+  ctx.fillStyle = '#7a5a3a';
+  ctx.beginPath(); ctx.ellipse(x, y, 7, 10, 0, 0, Math.PI * 2); ctx.fill();
+  // Metal bands
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(x, y - 6, 9, 3, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x, y + 6, 9, 3, 0, 0, Math.PI * 2); ctx.stroke();
+  // Top
+  ctx.fillStyle = '#5a3a1a';
+  ctx.beginPath(); ctx.ellipse(x, y - 10, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(x, y - 10, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
+}
+
 function drawIce(gx, gy) {
   const x = gx*TILE, y = gy*TILE;
   ctx.fillStyle = '#a0d8ef';
@@ -1092,10 +1350,10 @@ function drawFloor(gx, gy) {
     const hue = (Date.now() / 10 + gx * 30 + gy * 50) % 360;
     ctx.fillStyle = `hsl(${hue}, 60%, 20%)`;
   } else {
-    ctx.fillStyle = '#2a2a3e';
+    ctx.fillStyle = currentTheme.floor;
   }
   ctx.fillRect(x, y, TILE, TILE);
-  ctx.strokeStyle = discoMode ? `hsl(${(Date.now()/5 + gx*20 + gy*40) % 360}, 80%, 40%)` : '#333350';
+  ctx.strokeStyle = discoMode ? `hsl(${(Date.now()/5 + gx*20 + gy*40) % 360}, 80%, 40%)` : currentTheme.floorBorder;
   ctx.lineWidth = 0.5;
   ctx.strokeRect(x, y, TILE, TILE);
 }
@@ -1262,12 +1520,12 @@ function drawPlate(gx, gy, pressed) {
 function drawCrackedWall(gx, gy) {
   const x = gx * TILE, y = gy * TILE;
   // Brownish base to distinguish from normal walls
-  ctx.fillStyle = '#5a4a3e';
+  ctx.fillStyle = currentTheme.cracked;
   ctx.fillRect(x, y, TILE, TILE);
-  ctx.fillStyle = '#4a3a2e';
+  ctx.fillStyle = currentTheme.crackedDark;
   ctx.fillRect(x+2, y+2, TILE/2-3, TILE/2-3);
   ctx.fillRect(x+TILE/2+1, y+TILE/2+1, TILE/2-3, TILE/2-3);
-  ctx.fillStyle = '#6a5548';
+  ctx.fillStyle = currentTheme.crackedLight;
   ctx.fillRect(x+TILE/2+1, y+2, TILE/2-3, TILE/2-3);
   ctx.fillRect(x+2, y+TILE/2+1, TILE/2-3, TILE/2-3);
   // Prominent cracks
@@ -2118,6 +2376,16 @@ function draw() {
         const nf = [[1,0],[0,1],[-1,0],[0,-1]][np.npcFacing||0];
         drawDragonNPC(c, r, nf[0], nf[1], np.npcColor);
       }
+      else if (d === TRAFFIC_LIGHT) drawTrafficLight(c, r);
+      else if (d === FIRE_HYDRANT) drawFireHydrant(c, r);
+      else if (d === MANHOLE) drawManhole(c, r);
+      else if (d === TRASH_CAN) drawTrashCan(c, r);
+      else if (d === TRAIN_FRONT) drawTrainFront(c, r);
+      else if (d === TRAIN_BODY) drawTrainBody(c, r);
+      else if (d === TRAIN_WINDOW) drawTrainWindow(c, r);
+      else if (d === TRAIN_SEAT) drawTrainSeat(c, r);
+      else if (d === TRAIN_WHEEL) drawTrainWheel(c, r);
+      else if (d === BARREL) drawBarrel(c, r);
       if (decoRotated) ctx.restore();
       // Layer 4: deco2
       const d2 = cell[4];
@@ -2144,6 +2412,16 @@ function draw() {
         const nf = [[1,0],[0,1],[-1,0],[0,-1]][np.npcFacing||0];
         drawDragonNPC(c, r, nf[0], nf[1], np.npcColor);
       }
+      else if (d2 === TRAFFIC_LIGHT) drawTrafficLight(c, r);
+      else if (d2 === FIRE_HYDRANT) drawFireHydrant(c, r);
+      else if (d2 === MANHOLE) drawManhole(c, r);
+      else if (d2 === TRASH_CAN) drawTrashCan(c, r);
+      else if (d2 === TRAIN_FRONT) drawTrainFront(c, r);
+      else if (d2 === TRAIN_BODY) drawTrainBody(c, r);
+      else if (d2 === TRAIN_WINDOW) drawTrainWindow(c, r);
+      else if (d2 === TRAIN_SEAT) drawTrainSeat(c, r);
+      else if (d2 === TRAIN_WHEEL) drawTrainWheel(c, r);
+      else if (d2 === BARREL) drawBarrel(c, r);
       if (deco2Rotated) ctx.restore();
     }
   }
