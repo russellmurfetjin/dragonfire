@@ -266,8 +266,8 @@ const skinColors = _skinData.parts ? { ..._skinData.parts } : { ...SKIN_DEFAULT 
 const weaponMode = _skinData.weapon === 'gun' ? 'gun' : 'fire';
 
 // Tile types
-const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, EXIT = 7, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42, TRAFFIC_LIGHT = 43, FIRE_HYDRANT = 44, MANHOLE = 45, TRASH_CAN = 46, TRAIN_FRONT = 47, TRAIN_BODY = 48, TRAIN_WINDOW = 49, TRAIN_SEAT = 50, TRAIN_WHEEL = 51, BARREL = 52;
-const ROTATABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE, TRAIN_FRONT, TRAIN_BODY, TRAIN_WINDOW, TRAIN_SEAT, TRAIN_WHEEL]);
+const EMPTY = 0, WALL = 1, TORCH_OFF = 2, TORCH_ON = 3, ICE = 4, MIRROR_NE = 5, MIRROR_NW = 6, EXIT = 7, GRATE = 8, PUSH_BLOCK = 9, WATER = 10, TOGGLE_OFF = 11, TOGGLE_ON = 12, GATE_OPEN = 13, GATE_CLOSED = 14, LEVER_OFF = 15, LEVER_ON = 16, WATER_DRY = 17, BELT_UP = 18, BELT_RIGHT = 19, BELT_DOWN = 20, BELT_LEFT = 21, PLATE = 22, CRACKED = 23, EYE_OFF = 24, EYE_ON = 25, SKULL = 26, BONES = 27, COBWEB = 28, MUSHROOM = 29, GEAR = 30, PIPE = 31, CRATE = 32, SPIKE = 33, PAPER = 34, DOOR_CLOSED = 35, DOOR_OPEN = 36, RAILWAY = 37, ROAD = 38, LAMPPOST = 39, BENCH = 40, FOUNTAIN = 41, DRAGON_NPC = 42, TRAFFIC_LIGHT = 43, FIRE_HYDRANT = 44, MANHOLE = 45, TRASH_CAN = 46, TRAIN_FRONT = 47, TRAIN_BODY = 48, TRAIN_WINDOW = 49, TRAIN_SEAT = 50, TRAIN_WHEEL = 51, BARREL = 52, SUBWAY_WALL = 53, PLATFORM_EDGE = 54, SUBWAY_SIGN = 55, TURNSTILE = 56, SUBWAY_MAP = 57, SUBWAY_PILLAR = 58;
+const ROTATABLE_DECO = new Set([COBWEB, RAILWAY, ROAD, LAMPPOST, BENCH, FOUNTAIN, PIPE, TRAIN_FRONT, TRAIN_BODY, TRAIN_WINDOW, TRAIN_SEAT, TRAIN_WHEEL, PLATFORM_EDGE, SUBWAY_WALL]);
 
 // Theme system
 const THEMES = {
@@ -287,7 +287,7 @@ function cellToLayers(val) {
   if (val === WATER || val === ICE || val === WATER_DRY || (val >= BELT_UP && val <= BELT_LEFT) || val === PLATE || val === SPIKE) return [val, 0, 0, 0, 0];
   if (val === WALL || val === PUSH_BLOCK || val === MIRROR_NE || val === MIRROR_NW || val === GRATE || val === GATE_OPEN || val === GATE_CLOSED || val === CRACKED || val === DOOR_CLOSED || val === DOOR_OPEN) return [0, val, 0, 0, 0];
   if (val === TORCH_OFF || val === TORCH_ON || val === TOGGLE_OFF || val === TOGGLE_ON || val === LEVER_OFF || val === LEVER_ON || val === EYE_OFF || val === EYE_ON) return [0, 0, val, 0, 0];
-  if ((val >= SKULL && val <= CRATE) || val === PAPER || (val >= RAILWAY && val <= BARREL)) return [0, 0, 0, val, 0];
+  if ((val >= SKULL && val <= CRATE) || val === PAPER || (val >= RAILWAY && val <= SUBWAY_PILLAR)) return [0, 0, 0, val, 0];
   return [0, 0, 0, 0, 0];
 }
 
@@ -1285,6 +1285,134 @@ function drawBarrel(gx, gy) {
   ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.ellipse(x, y - 10, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawSubwayWall(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  ctx.fillStyle = '#3a3a4a';
+  ctx.fillRect(x, y, TILE, TILE);
+  // Tile pattern
+  ctx.strokeStyle = '#2a2a3a';
+  ctx.lineWidth = 1;
+  for (let r = 0; r < 2; r++) {
+    for (let c = 0; c < 2; c++) {
+      ctx.strokeRect(x + 2 + c * 22, y + 2 + r * 22, 20, 20);
+    }
+  }
+  // Grout highlight
+  ctx.fillStyle = '#4a4a5a';
+  ctx.fillRect(x + 4, y + 4, 16, 16);
+  ctx.fillRect(x + 26, y + 4, 16, 16);
+  ctx.fillRect(x + 4, y + 26, 16, 16);
+  ctx.fillRect(x + 26, y + 26, 16, 16);
+}
+
+function drawPlatformEdge(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Platform surface
+  ctx.fillStyle = '#5a5a5a';
+  ctx.fillRect(x, y, TILE, TILE / 2);
+  // Yellow safety line
+  ctx.fillStyle = '#ccaa00';
+  ctx.fillRect(x, y + TILE / 2 - 4, TILE, 4);
+  // Bumpy safety strip
+  ctx.fillStyle = '#ddbb22';
+  for (let i = 0; i < 6; i++) {
+    ctx.beginPath();
+    ctx.arc(x + 4 + i * 8, y + TILE / 2 - 2, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Drop-off (dark area below)
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(x, y + TILE / 2, TILE, TILE / 2);
+}
+
+function drawSubwaySign(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE + TILE / 2;
+  // Sign background (circle)
+  ctx.fillStyle = '#1a4a8a';
+  ctx.beginPath();
+  ctx.arc(x, y, 12, 0, Math.PI * 2);
+  ctx.fill();
+  // White ring
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x, y, 10, 0, Math.PI * 2);
+  ctx.stroke();
+  // Letter M
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('M', x, y + 1);
+}
+
+function drawTurnstile(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Base posts
+  ctx.fillStyle = '#666';
+  ctx.fillRect(x + 4, y + 4, 6, TILE - 8);
+  ctx.fillRect(x + TILE - 10, y + 4, 6, TILE - 8);
+  // Top bar
+  ctx.fillStyle = '#888';
+  ctx.fillRect(x + 4, y + 4, TILE - 8, 4);
+  // Turnstile arms
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 2;
+  const cx = x + TILE / 2, cy = y + TILE / 2;
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2 + Date.now() / 2000;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * 10, cy + Math.sin(a) * 10);
+    ctx.stroke();
+  }
+  // Center hub
+  ctx.fillStyle = '#777';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSubwayMap(gx, gy) {
+  const x = gx * TILE, y = gy * TILE;
+  // Map background
+  ctx.fillStyle = '#e8e0d0';
+  ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+  ctx.strokeStyle = '#8b7355';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 4, y + 4, TILE - 8, TILE - 8);
+  // Colored route lines
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#c44';
+  ctx.beginPath(); ctx.moveTo(x + 8, y + 12); ctx.lineTo(x + TILE - 8, y + 20); ctx.stroke();
+  ctx.strokeStyle = '#44c';
+  ctx.beginPath(); ctx.moveTo(x + 10, y + TILE - 12); ctx.lineTo(x + TILE - 10, y + 14); ctx.stroke();
+  ctx.strokeStyle = '#4a4';
+  ctx.beginPath(); ctx.moveTo(x + TILE / 2, y + 8); ctx.lineTo(x + TILE / 2, y + TILE - 8); ctx.stroke();
+  // Station dots
+  ctx.fillStyle = '#333';
+  ctx.beginPath(); ctx.arc(x + TILE / 2, y + TILE / 2, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 12, y + 14, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + TILE - 12, y + TILE - 14, 1.5, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawSubwayPillar(gx, gy) {
+  const x = gx * TILE + TILE / 2, y = gy * TILE;
+  // Main pillar body
+  ctx.fillStyle = '#555';
+  ctx.fillRect(x - 6, y, 12, TILE);
+  // Highlight
+  ctx.fillStyle = '#666';
+  ctx.fillRect(x - 4, y, 3, TILE);
+  // Shadow
+  ctx.fillStyle = '#444';
+  ctx.fillRect(x + 3, y, 3, TILE);
+  // Top and bottom caps
+  ctx.fillStyle = '#777';
+  ctx.fillRect(x - 8, y, 16, 4);
+  ctx.fillRect(x - 8, y + TILE - 4, 16, 4);
 }
 
 function drawIce(gx, gy) {
@@ -2386,6 +2514,12 @@ function draw() {
       else if (d === TRAIN_SEAT) drawTrainSeat(c, r);
       else if (d === TRAIN_WHEEL) drawTrainWheel(c, r);
       else if (d === BARREL) drawBarrel(c, r);
+      else if (d === SUBWAY_WALL) drawSubwayWall(c, r);
+      else if (d === PLATFORM_EDGE) drawPlatformEdge(c, r);
+      else if (d === SUBWAY_SIGN) drawSubwaySign(c, r);
+      else if (d === TURNSTILE) drawTurnstile(c, r);
+      else if (d === SUBWAY_MAP) drawSubwayMap(c, r);
+      else if (d === SUBWAY_PILLAR) drawSubwayPillar(c, r);
       if (decoRotated) ctx.restore();
       // Layer 4: deco2
       const d2 = cell[4];
@@ -2422,6 +2556,12 @@ function draw() {
       else if (d2 === TRAIN_SEAT) drawTrainSeat(c, r);
       else if (d2 === TRAIN_WHEEL) drawTrainWheel(c, r);
       else if (d2 === BARREL) drawBarrel(c, r);
+      else if (d2 === SUBWAY_WALL) drawSubwayWall(c, r);
+      else if (d2 === PLATFORM_EDGE) drawPlatformEdge(c, r);
+      else if (d2 === SUBWAY_SIGN) drawSubwaySign(c, r);
+      else if (d2 === TURNSTILE) drawTurnstile(c, r);
+      else if (d2 === SUBWAY_MAP) drawSubwayMap(c, r);
+      else if (d2 === SUBWAY_PILLAR) drawSubwayPillar(c, r);
       if (deco2Rotated) ctx.restore();
     }
   }
