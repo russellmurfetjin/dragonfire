@@ -12,6 +12,8 @@ mkdir -p "$DIST_DIR"
 cp index.html "$DIST_DIR/"
 cp game.html "$DIST_DIR/"
 cp editor.html "$DIST_DIR/"
+cp sounds.js "$DIST_DIR/"
+cp levels.js "$DIST_DIR/"
 
 # Create zip
 cd "$DIST_DIR"
